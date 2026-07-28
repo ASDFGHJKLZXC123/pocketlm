@@ -1,0 +1,43 @@
+build/
+.DS_Store
+node_modules/
+ios/Pods/
+*.gguf
+.cache/
+.pnpm-store/
+.bundle/
+coverage/
+*.lcov
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.p12
+*.mobileprovision
+
+# Apple/Xcode generated state
+DerivedData/
+*.xcresult/
+*.xcuserstate
+xcuserdata/
+*.trace
+
+# Generated diagnostics belong outside the source tree
+docs/evidence/
+*.log
+
+# app/ (Expo/RN)
+app/node_modules/
+app/ios/Pods/
+app/ios/build/
+app/.expo/
+app/dist/
+app/.env.local
+app/ios/PocketLM/cmake-build/
+
+# Sentry — contains auth token; see app/ios/sentry.properties.example
+app/ios/sentry.properties

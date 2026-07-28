@@ -1,0 +1,57 @@
+name: Periodic TSAN
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/tsan.yml
+      - .gitmodules
+      - cpp/**
+      - scripts/**
+  schedule:
+    - cron: "43 8 * * 3,6"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: periodic-tsan
+  cancel-in-progress: false
+
+jobs:
+  periodic-tsan:
+    name: periodic TSAN concurrency suite
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out recursive submodules
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          clean: true
+          fetch-depth: 1
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Isolate native build outputs
+        run: echo "POCKETLM_NATIVE_BUILD_ROOT=$RUNNER_TEMP/pocketlm-native" >> "$GITHUB_ENV"
+
+      - name: Set up CMake 4.4.0 and Ninja 1.13.2
+        run: |
+          python3 -m venv "$RUNNER_TEMP/pocketlm-cmake"
+          "$RUNNER_TEMP/pocketlm-cmake/bin/python" -m pip install \
+            --disable-pip-version-check \
+            cmake==4.4.0
+          curl --fail --location --silent --show-error \
+            --output "$RUNNER_TEMP/ninja-linux.zip" \
+            https://github.com/ninja-build/ninja/releases/download/v1.13.2/ninja-linux.zip
+          echo "5749cbc4e668273514150a80e387a957f933c6ed3f5f11e03fb30955e2bbead6  $RUNNER_TEMP/ninja-linux.zip" \
+            | sha256sum --check
+          unzip -q "$RUNNER_TEMP/ninja-linux.zip" \
+            -d "$RUNNER_TEMP/pocketlm-cmake/bin"
+          echo "$RUNNER_TEMP/pocketlm-cmake/bin" >> "$GITHUB_PATH"
+
+      - name: Run the TSAN concurrency test label
+        run: bash scripts/verify-native.sh tsan

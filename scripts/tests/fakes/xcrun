@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ "$1" == "simctl" && "$2" == "list" ]]; then
+    echo '{"devices":{"com.apple.CoreSimulator.SimRuntime.iOS-17-5":[{"state":"Booted","isAvailable":true,"name":"Fixture iPhone","udid":"POCKETLM-FIXTURE-UDID"}]}}'
+elif [[ "$1" == "simctl" && "$2" == "get_app_container" ]]; then
+    [[ "$3" == "POCKETLM-FIXTURE-UDID" ]]
+    [[ -d "${POCKETLM_FAKE_SIMULATOR_CONTAINER:?}" ]]
+    echo "$POCKETLM_FAKE_SIMULATOR_CONTAINER"
+elif [[ "$1" == "simctl" && "$2" == "terminate" ]]; then
+    if [[ -n "${POCKETLM_FAKE_XCRUN_LOG:-}" ]]; then
+        echo "terminate $3 $4" >> "$POCKETLM_FAKE_XCRUN_LOG"
+    fi
+elif [[ "$1" == "swift" ]]; then
+    mode="$3"
+    path="$4"
+    [[ "$mode" == "set" || "$mode" == "check" ]]
+    [[ -f "$path" ]]
+else
+    echo "unsupported fake xcrun invocation: $*" >&2
+    exit 2
+fi

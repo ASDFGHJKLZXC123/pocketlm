@@ -1,0 +1,192 @@
+# Set by expo-router. This enables Fabric-only features from react-native-screens
+ENV['RNS_GAMMA_ENABLED'] ||= '1'
+require File.join(File.dirname(`node --print "require.resolve('expo/package.json')"`), "scripts/autolinking")
+require File.join(File.dirname(`node --print "require.resolve('react-native/package.json')"`), "scripts/react_native_pods")
+
+require 'json'
+require 'digest'
+podfile_properties = JSON.parse(File.read(File.join(__dir__, 'Podfile.properties.json'))) rescue {}
+
+POCKETLM_RN_CODEGEN_VERSION = '0.83.4'
+POCKETLM_RN_CODEGEN_SHA256 = '473f10259e7429b7d6d1b804d875d23748d95fda22bfe44a8343c9ea81cfa683'
+POCKETLM_EXPO_CONSTANTS_VERSION = '55.0.14'
+POCKETLM_EXPO_CONSTANTS_PODSPEC_SHA256 = 'f823e13423cab6379104cc32228988e60098317479a49a313ca5caf887bf08c2'
+
+def pocketlm_codegen_path_shim_current?(react_native_path)
+  react_native_root = File.expand_path(react_native_path, __dir__)
+  package_path = File.join(react_native_root, 'package.json')
+  vulnerable_script = File.join(
+    react_native_root,
+    'scripts/codegen/generate-artifacts-executor/generateReactCodegenPodspec.js'
+  )
+  version = JSON.parse(File.read(package_path))['version']
+  sha256 = Digest::SHA256.file(vulnerable_script).hexdigest
+
+  unless version == POCKETLM_RN_CODEGEN_VERSION && sha256 == POCKETLM_RN_CODEGEN_SHA256
+    Pod::UI.warn(
+      "[PocketLM] Skipping stale codegen whitespace-path shim: " \
+      "expected #{POCKETLM_RN_CODEGEN_VERSION}/#{POCKETLM_RN_CODEGEN_SHA256}, " \
+      "got #{version}/#{sha256}"
+    )
+    return false
+  end
+  true
+end
+
+def enable_pocketlm_codegen_path_shim_for_install!(react_native_path)
+  return unless pocketlm_codegen_path_shim_current?(react_native_path)
+
+  shim_path = File.join(__dir__, 'PocketLM', 'Bridge', 'PocketLMCodegenPathShim.cjs')
+  require_option = "--require=\"#{shim_path}\""
+  current_options = ENV.fetch('NODE_OPTIONS', '')
+  ENV['NODE_OPTIONS'] = [current_options, require_option].reject(&:empty?).join(' ')
+  ENV['POCKETLM_CODEGEN_APP_PATH'] = File.expand_path('..', __dir__)
+  ENV['POCKETLM_CODEGEN_RN_DIR'] = File.expand_path(react_native_path, __dir__)
+end
+
+def install_pocketlm_codegen_path_shim!(installer, react_native_path)
+  return unless pocketlm_codegen_path_shim_current?(react_native_path)
+
+  target = installer.pods_project.targets.find { |candidate| candidate.name == 'ReactCodegen' }
+  phase = target&.shell_script_build_phases&.find { |candidate| candidate.name == '[CP-User] Generate Specs' }
+  unless phase
+    Pod::UI.warn('[PocketLM] ReactCodegen Generate Specs phase not found; path shim not installed')
+    return
+  end
+
+  marker = 'POCKETLM_CODEGEN_PATH_SHIM'
+  return if phase.shell_script.include?(marker)
+
+  insertion_point = 'export RCT_SCRIPT_TYPE='
+  unless phase.shell_script.include?(insertion_point)
+    Pod::UI.warn('[PocketLM] ReactCodegen script shape changed; path shim not installed')
+    return
+  end
+
+  shim_exports = <<~'SH'
+    export POCKETLM_CODEGEN_PATH_SHIM="$RCT_SCRIPT_POD_INSTALLATION_ROOT/PocketLM/Bridge/PocketLMCodegenPathShim.cjs"
+    export NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--require=\"$POCKETLM_CODEGEN_PATH_SHIM\""
+
+  SH
+  phase.shell_script = phase.shell_script.sub(insertion_point, shim_exports + insertion_point)
+end
+
+def pocketlm_expo_constants_phase_patch_current?
+  package_path = File.expand_path('../node_modules/expo-constants/package.json', __dir__)
+  podspec_path = File.expand_path('../node_modules/expo-constants/ios/EXConstants.podspec', __dir__)
+
+  unless File.file?(package_path) && File.file?(podspec_path)
+    Pod::UI.warn('[PocketLM] Skipping Expo Constants whitespace-path correction: source files not found')
+    return false
+  end
+
+  version = JSON.parse(File.read(package_path))['version']
+  sha256 = Digest::SHA256.file(podspec_path).hexdigest
+  unless version == POCKETLM_EXPO_CONSTANTS_VERSION &&
+         sha256 == POCKETLM_EXPO_CONSTANTS_PODSPEC_SHA256
+    Pod::UI.warn(
+      "[PocketLM] Skipping stale Expo Constants whitespace-path correction: " \
+      "expected #{POCKETLM_EXPO_CONSTANTS_VERSION}/#{POCKETLM_EXPO_CONSTANTS_PODSPEC_SHA256}, " \
+      "got #{version}/#{sha256}"
+    )
+    return false
+  end
+  true
+end
+
+def install_pocketlm_expo_constants_phase_patch!(installer)
+  return unless pocketlm_expo_constants_phase_patch_current?
+
+  target = installer.pods_project.targets.find { |candidate| candidate.name == 'EXConstants' }
+  phase_name = '[CP-User] Generate app.config for prebuilt Constants.manifest'
+  phase = target&.shell_script_build_phases&.find { |candidate| candidate.name == phase_name }
+  unless phase
+    Pod::UI.warn('[PocketLM] Expo Constants app.config phase not found; whitespace-path correction skipped')
+    return
+  end
+
+  unsafe_script = 'bash -l -c "$PODS_TARGET_SRCROOT/../scripts/get-app-config-ios.sh"'
+  path_only_script = 'bash -l "$PODS_TARGET_SRCROOT/../scripts/get-app-config-ios.sh"'
+  safe_script = 'PROJECT_DIR=Pods PROJECT_ROOT="$PODS_ROOT/../.." bash -l "$PODS_TARGET_SRCROOT/../scripts/get-app-config-ios.sh"'
+  return if phase.shell_script == safe_script
+
+  unless [unsafe_script, path_only_script].include?(phase.shell_script)
+    Pod::UI.warn('[PocketLM] Expo Constants app.config phase shape changed; whitespace-path correction skipped')
+    return
+  end
+
+  # Pass the script path as one argv entry to bash. The pinned dependency also
+  # expands PROJECT_DIR without quotes, so give only this child process a safe
+  # basename while preserving the real app root through a quoted PROJECT_ROOT.
+  phase.shell_script = safe_script
+end
+
+def ccache_enabled?(podfile_properties)
+  # Environment variable takes precedence
+  return ENV['USE_CCACHE'] == '1' if ENV['USE_CCACHE']
+
+  # Fall back to Podfile properties
+  podfile_properties['apple.ccacheEnabled'] == 'true'
+end
+
+ENV['EX_DEV_CLIENT_NETWORK_INSPECTOR'] ||= podfile_properties['EX_DEV_CLIENT_NETWORK_INSPECTOR']
+ENV['RCT_USE_RN_DEP'] ||= '1' if podfile_properties['ios.buildReactNativeFromSource'] != 'true'
+ENV['RCT_USE_PREBUILT_RNCORE'] ||= '1' if podfile_properties['ios.buildReactNativeFromSource'] != 'true'
+ENV['RCT_HERMES_V1_ENABLED'] ||= '1' if podfile_properties['expo.useHermesV1'] == 'true'
+platform :ios, podfile_properties['ios.deploymentTarget'] || '17.0'
+
+prepare_react_native_project!
+
+target 'PocketLM' do
+  use_expo_modules!
+
+  if ENV['EXPO_USE_COMMUNITY_AUTOLINKING'] == '1'
+    config_command = ['node', '-e', "process.argv=['', '', 'config'];require('@react-native-community/cli').run()"];
+  else
+    config_command = [
+      'node',
+      '--no-warnings',
+      '--eval',
+      'require(\'expo/bin/autolinking\')',
+      'expo-modules-autolinking',
+      'react-native-config',
+      '--json',
+      '--platform',
+      'ios'
+    ]
+  end
+
+  config = use_native_modules!(config_command)
+
+  # React Native runs codegen once during `pod install` and again from the
+  # generated ReactCodegen Xcode phase. Guard and preload the same narrow path
+  # quoting shim for both invocations; node_modules itself remains untouched.
+  enable_pocketlm_codegen_path_shim_for_install!(config[:reactNativePath])
+
+  use_frameworks! :linkage => podfile_properties['ios.useFrameworks'].to_sym if podfile_properties['ios.useFrameworks']
+  use_frameworks! :linkage => ENV['USE_FRAMEWORKS'].to_sym if ENV['USE_FRAMEWORKS']
+
+  use_react_native!(
+    :path => config[:reactNativePath],
+    :hermes_enabled => podfile_properties['expo.jsEngine'] == nil || podfile_properties['expo.jsEngine'] == 'hermes',
+    # An absolute path to your application root.
+    :app_path => "#{Pod::Config.instance.installation_root}/..",
+    :privacy_file_aggregation_enabled => podfile_properties['apple.privacyManifestAggregationEnabled'] != 'false',
+  )
+
+  # PocketLM native bridge: Objective-C++ TurboModule + CMake-built static libs.
+  # Its distinct pod target name prevents a workspace scheme collision with
+  # the PocketLM app target; the JS/TurboModule export remains `PocketLM`.
+  pod 'PocketLMNative', :path => '.'
+
+  post_install do |installer|
+    react_native_post_install(
+      installer,
+      config[:reactNativePath],
+      :mac_catalyst_enabled => false,
+      :ccache_enabled => ccache_enabled?(podfile_properties),
+    )
+    install_pocketlm_codegen_path_shim!(installer, config[:reactNativePath])
+    install_pocketlm_expo_constants_phase_patch!(installer)
+  end
+end

@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+OUTPUT_PATH=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --output)
+            OUTPUT_PATH="$2"
+            shift 2
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            shift
+            ;;
+    esac
+done
+
+[[ -n "$OUTPUT_PATH" ]] || { echo "fake curl did not receive --output" >&2; exit 2; }
+[[ -n "${POCKETLM_FAKE_CURL_SOURCE:-}" ]] || { echo "POCKETLM_FAKE_CURL_SOURCE is required" >&2; exit 2; }
+
+/bin/cp "$POCKETLM_FAKE_CURL_SOURCE" "$OUTPUT_PATH"
+if [[ -n "${POCKETLM_FAKE_CURL_LOG:-}" ]]; then
+    echo "$OUTPUT_PATH" >> "$POCKETLM_FAKE_CURL_LOG"
+fi

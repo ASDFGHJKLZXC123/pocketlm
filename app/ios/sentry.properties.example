@@ -1,0 +1,37 @@
+# sentry.properties.example
+#
+# Copy this file to sentry.properties (same directory) and fill in the values.
+# sentry.properties is listed in .gitignore — never commit the real file.
+#
+# These values are consumed by the Sentry Xcode build phases added by the
+# @sentry/react-native config plugin:
+#   * "Bundle React Native code and images" (wrapped by sentry-xcode.sh for
+#     JS source-map upload)
+#   * "Upload Debug Symbols to Sentry" (dSYM upload via
+#     sentry-xcode-debug-files.sh)
+#
+# IMPORTANT: The dSYM upload phase ONLY runs on Release builds (the script
+# skips debug builds automatically).  If SENTRY_AUTH_TOKEN is absent during a
+# Release build, set SENTRY_ALLOW_FAILURE=true (or SENTRY_DISABLE_AUTO_UPLOAD=true)
+# in the Xcode scheme environment to avoid a build failure:
+#
+#   export SENTRY_ALLOW_FAILURE=true    # upload attempted but non-fatal on auth error
+#   export SENTRY_DISABLE_AUTO_UPLOAD=true  # skip upload entirely
+#
+# Alternatively, export these as environment variables before running
+# `xcodebuild` or opening Xcode:
+#   export SENTRY_ORG=my-org
+#   export SENTRY_PROJECT=my-project
+#   export SENTRY_AUTH_TOKEN=sntrys_...
+
+# Your Sentry organisation slug (shown in the Sentry URL: sentry.io/<org>/)
+defaults.org=YOUR_SENTRY_ORG
+
+# Your Sentry project slug
+defaults.project=YOUR_SENTRY_PROJECT
+
+# Auth token with project:write scope — generate at
+# https://sentry.io/settings/account/api/auth-tokens/
+# NEVER commit this value.  Use the environment variable instead:
+#   export SENTRY_AUTH_TOKEN=sntrys_...
+auth.token=YOUR_SENTRY_AUTH_TOKEN

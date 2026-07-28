@@ -1,0 +1,2 @@
+patchedDependencies:
+  react-native@0.83.4: patches/react-native@0.83.4.patch

@@ -1,0 +1,63 @@
+diff --git a/scripts/cocoapods/rncore.rb b/scripts/cocoapods/rncore.rb
+index 597c4b4370d1c3f40fb9420076b30f8bfe105988..0b2c43eac2a85c8474318b71789a918a580edb46 100644
+--- a/scripts/cocoapods/rncore.rb
++++ b/scripts/cocoapods/rncore.rb	
+@@ -143,7 +143,9 @@ class ReactNativeCoreUtils
+         rncore_log("  #{Pathname.new(destinationDebug).relative_path_from(Pathname.pwd).to_s}")
+         rncore_log("  #{Pathname.new(destinationRelease).relative_path_from(Pathname.pwd).to_s}")
+ 
+-        return {:http => URI::File.build(path: destinationDebug).to_s }
++        # Preserve the local Debug/Release artifacts used by the replacement
++        # phase, but keep the evaluated podspec source checkout-independent.
++        return {:http => stable_tarball_url(@@react_native_version, :debug) }
+     end
+ 
+     def self.podspec_source_download_prebuilt_nightly_tarball()
+diff --git a/scripts/cocoapods/rndependencies.rb b/scripts/cocoapods/rndependencies.rb
+index a901840340712bf89604f194790404363d710054..dd36a1303207137b257aa68f918b86efe0428900 100644
+--- a/scripts/cocoapods/rndependencies.rb
++++ b/scripts/cocoapods/rndependencies.rb	
+@@ -161,7 +161,9 @@ class ReactNativeDependenciesUtils
+         destinationDebug = download_stable_rndeps(@@react_native_path, @@react_native_version, :debug)
+         download_stable_rndeps(@@react_native_path, @@react_native_version, :release)
+ 
+-        return {:http => URI::File.build(path: destinationDebug).to_s }
++        # Preserve the local Debug/Release artifacts used by the replacement
++        # phase, but keep the evaluated podspec source checkout-independent.
++        return {:http => url }
+     end
+ 
+     def self.release_tarball_url(version, build_type)
+diff --git a/sdks/hermes-engine/hermes-engine.podspec b/sdks/hermes-engine/hermes-engine.podspec
+index fb99142850803e5afc47fcd1b7d58bef482da9fd..a41e0487a2afefc40776f614e6dd31b096a0be0e 100644
+--- a/sdks/hermes-engine/hermes-engine.podspec
++++ b/sdks/hermes-engine/hermes-engine.podspec	
+@@ -4,6 +4,7 @@
+ # LICENSE file in the root directory of this source tree.
+ 
+ require "json"
++require "pathname"
+ require_relative "./hermes-utils.rb"
+ 
+ begin
+@@ -74,9 +75,19 @@ Pod::Spec.new do |spec|
+       hermes_compiler_path = File.dirname(Pod::Executable.execute_command('node', ['-p',
+         "require.resolve(\"hermes-compiler\", {paths: [\"#{react_native_path}\"]})", __dir__]).strip
+       )
++      pods_root = Pathname.new(Pod::Config.instance.project_pods_root).realpath
++      compiler_root = Pathname.new(hermes_compiler_path).realpath
++      node_modules_root = (pods_root / ".." / ".." / "node_modules").realpath
++      node_modules_prefix = "#{node_modules_root}#{File::SEPARATOR}"
++      unless compiler_root.to_s.start_with?(node_modules_prefix)
++        abort "[Hermes] Resolved compiler outside app/node_modules: #{compiler_root}"
++      end
++      hermes_compiler_relative_path = compiler_root.relative_path_from(pods_root)
+ 
+       spec.user_target_xcconfig = {
+-        'HERMES_CLI_PATH' => "#{hermes_compiler_path}/hermesc/osx-bin/hermesc"
++        # Keep the evaluated podspec independent of the checkout root so its
++        # CocoaPods lock checksum is portable across clean workspaces.
++        'HERMES_CLI_PATH' => "$(PODS_ROOT)/#{hermes_compiler_relative_path}/hermesc/osx-bin/hermesc"
+       }
+     end
+ 
