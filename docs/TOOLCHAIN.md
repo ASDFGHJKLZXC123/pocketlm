@@ -30,8 +30,8 @@ keeps evaluated iOS dependency paths independent of the checkout root.
 ## Inspect the local environment
 
 ```sh
-node --version
-corepack pnpm --version
+./scripts/with-pinned-node.sh node --version
+./scripts/with-pinned-node.sh bash -c 'cd app && corepack pnpm --version'
 cmake --version
 ninja --version
 xcodebuild -version
@@ -42,6 +42,13 @@ bundle exec pod --version
 git submodule status --recursive
 xcrun simctl list runtimes
 ```
+
+`scripts/with-pinned-node.sh` reads the exact `.node-version` pin and requires
+Corepack from the same Node `bin` directory. It accepts an already-exact active
+Node, otherwise it checks `${NVM_DIR:-$HOME/.nvm}`. Set `POCKETLM_NODE_BIN` to
+the exact Node `bin` directory for another installation layout. The launcher
+does not run `corepack enable` or modify the selected runtime; Corepack resolves
+pnpm from `app/package.json`.
 
 Generated CMake trees, `node_modules`, Pods, DerivedData, model files, and test
 artifacts are disposable outputs. They are not portable build inputs.
@@ -76,7 +83,7 @@ Run commands from the repository root.
 ### Fast checks
 
 ```sh
-./scripts/verify-fast.sh
+./scripts/with-pinned-node.sh ./scripts/verify-fast.sh
 ```
 
 This command:
@@ -85,7 +92,8 @@ This command:
 - installs the frozen JavaScript dependency graph;
 - runs TypeScript, ESLint, and Jest;
 - performs a static Expo iOS export; and
-- runs model-provisioning and qualification-validator fixtures.
+- runs model-provisioning, qualification-validator, and pinned Node entry-point
+  fixtures.
 
 ### Native checks
 
@@ -114,7 +122,7 @@ GGUF:
 ### Full macOS build
 
 ```sh
-./scripts/verify-release.sh all
+./scripts/with-pinned-node.sh ./scripts/verify-release.sh all
 ```
 
 The full verifier requires:

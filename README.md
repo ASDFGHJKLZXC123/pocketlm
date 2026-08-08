@@ -85,11 +85,17 @@ git submodule status --recursive
 Install the locked JavaScript, Ruby, and CocoaPods dependencies:
 
 ```sh
-corepack enable
-(cd app && CI=1 corepack pnpm install --frozen-lockfile)
+./scripts/with-pinned-node.sh bash -c \
+  'cd app && CI=1 corepack pnpm install --frozen-lockfile'
 BUNDLE_FROZEN=true bundle install
 (cd app/ios && bundle exec pod install --deployment)
 ```
+
+The launcher reads `.node-version`, selects that exact Node installation, and
+requires its bundled Corepack. It uses an exact active Node first, then the
+matching NVM installation. Set `POCKETLM_NODE_BIN` to an exact Node `bin`
+directory when the runtime is installed elsewhere. It never enables or changes
+Corepack shims.
 
 Download and verify the model. Model bytes are stored in a local cache and are
 never committed:
@@ -125,17 +131,17 @@ xcrun simctl bootstatus "$POCKETLM_SIMULATOR_UDID" -b
 In a second terminal, start Metro from the cloned repository:
 
 ```sh
-cd PocketLM/app
-corepack pnpm start
+cd PocketLM
+./scripts/with-pinned-node.sh bash -c 'cd app && corepack pnpm start'
 ```
 
 Back in the first terminal, keep the resolved identifier in scope while you
 build, install, seed, and relaunch the app:
 
 ```sh
-(cd app && corepack pnpm exec expo run:ios \
-  --device "$POCKETLM_SIMULATOR_UDID" \
-  --no-bundler)
+./scripts/with-pinned-node.sh bash -c \
+  'cd app && corepack pnpm exec expo run:ios --device "$1" --no-bundler' \
+  shell "$POCKETLM_SIMULATOR_UDID"
 ./scripts/seed-simulator-model.sh --udid "$POCKETLM_SIMULATOR_UDID"
 xcrun simctl launch "$POCKETLM_SIMULATOR_UDID" com.pocketlm.app
 ```
@@ -152,7 +158,7 @@ toolchain problems.
 Fast application and fixture checks:
 
 ```sh
-./scripts/verify-fast.sh
+./scripts/with-pinned-node.sh ./scripts/verify-fast.sh
 ```
 
 Native Debug/ASan and Release checks:
@@ -177,7 +183,7 @@ The model-backed native test requires the downloaded GGUF:
 The complete clean-tree macOS verification is:
 
 ```sh
-./scripts/verify-release.sh all
+./scripts/with-pinned-node.sh ./scripts/verify-release.sh all
 ```
 
 That command validates pinned tools, installs frozen dependencies, runs the

@@ -12,8 +12,8 @@ From the repository root:
 ```sh
 git status --short
 git submodule status --recursive
-node --version
-(cd app && corepack pnpm --version)
+./scripts/with-pinned-node.sh node --version
+./scripts/with-pinned-node.sh bash -c 'cd app && corepack pnpm --version'
 ruby --version
 bundle --version
 xcodebuild -version
@@ -71,10 +71,23 @@ PocketLM freezes:
 Install dependencies only through the locked graphs:
 
 ```sh
-(cd app && CI=1 corepack pnpm install --frozen-lockfile)
+./scripts/with-pinned-node.sh bash -c \
+  'cd app && CI=1 corepack pnpm install --frozen-lockfile'
 BUNDLE_FROZEN=true bundle install
 (cd app/ios && bundle exec pod install --deployment)
 ```
+
+The launcher accepts an exact active Node or the exact NVM runtime named by
+`.node-version`. If Node is installed elsewhere, provide its `bin` directory
+explicitly:
+
+```sh
+POCKETLM_NODE_BIN=/absolute/path/to/node/bin \
+  ./scripts/with-pinned-node.sh ./scripts/verify-fast.sh
+```
+
+The directory must contain exact Node 22.23.1 and a working Corepack. Do not run
+`corepack enable`; the launcher does not need or modify global shims.
 
 Do not use an unpinned global `pod install` for a reproducible build.
 

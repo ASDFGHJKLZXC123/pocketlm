@@ -59,6 +59,9 @@ POCKETLM_REQUIRE_EXACT_MODEL=0 \
 echo "==> Qualification artifact validator fixtures"
 ruby "${SCRIPT_DIR}/tests/m4_artifact_validator_test.rb"
 
+echo "==> Pinned Node entry-point fixtures"
+"${SCRIPT_DIR}/tests/pinned_node_entrypoint_test.sh"
+
 pocketlm_assert_worktree_unchanged \
     "$REPOSITORY_ROOT" "$status_before" "$fingerprint_before"
 echo "verify-fast passed."
