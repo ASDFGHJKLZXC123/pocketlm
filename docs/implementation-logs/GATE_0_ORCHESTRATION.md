@@ -1,8 +1,11 @@
 # Expansion Gate 0 orchestration packet
 
-Status: active; implementation dispatch is held at Gate 0.
+Status: active; G0-A tooling implementation is accepted, G0-A and feature
+dispatch remain held at Gate 0.
 Date: 2026-08-07.
 Repository basis: `6f9de4a33d08a11ec37258b0d2cab1acab5f61a4`.
+Documentation preservation: `3425a50c20f758702316b2c0cb831240ffbdde44`.
+G0-A implementation: `2975d61d13903dd3cb5ee8518034427fe9d345be`.
 Owning plan: `docs/plans/2026-08-07-ios-android-expansion-implementation-plan.md`.
 
 ## Outcome
@@ -12,10 +15,10 @@ foundation lane because it owns CMake linkage, native-codegen placement, catalog
 identity, and the iOS packaging boundary. Android and iOS implementation lanes
 may split only after those shared outputs and the Gate 0 contracts are accepted.
 
-No expansion source implementation is authorized by this packet. Gate 0 is not
-closed: the local baseline is still being completed, physical devices are not
-connected, the Android SDK/NDK matrix is incomplete, and several catalog/policy
-fixtures still need evidence.
+No expansion source implementation is authorized by this packet. G0-A added
+only a reproducible verification entry point and evidence. Gate 0 is not closed:
+physical devices are not connected, Android disk and SDK/NDK/image prerequisites
+are incomplete, and contract/model/platform fixtures still need evidence.
 
 Independent review evidence is recorded in
 `docs/implementation-logs/GATE_0_INDEPENDENT_REVIEW.md`.
@@ -141,6 +144,12 @@ clean-prebuild proof.
 ### G0-A — reproducible workspace and toolchain entry point
 
 Owner: root orchestrator. Reviewer: GPT-5.6 Sol.
+Status: tooling implementation accepted at `2975d61`; clean fast and iOS
+Simulator release acceptance passed. G0-A remains open for Android capacity and
+trusted assigned-host package-resolution evidence.
+
+Detailed evidence is recorded in
+`docs/implementation-logs/GATE_0A_REPRODUCIBLE_WORKSPACE.md`.
 
 Prerequisites:
 
@@ -157,9 +166,20 @@ Scope:
 
 Exit evidence:
 
-- clean Git snapshot at the approved base;
-- `verify-fast` succeeds through the pinned entry point; and
-- release verifiers no longer reject the checkout path.
+- [x] The nine-document preservation commit has the approved base as its sole
+      parent, and the original checkout remains unchanged.
+- [x] `/Users/f8fq/coding/PocketLM-G0A` passes the no-space predicate with the
+      exact clean submodule.
+- [x] `verify-fast` succeeds from clean implementation commit `2975d61` through
+      the pinned entry point.
+- [x] `verify-release.sh ios` accepts the clean no-space worktree and completes
+      a fresh arm64 Simulator app build.
+- [ ] The local project safety policy of at least 40 GiB free is demonstrated
+      before Android NDK/arm64 system-image installation; only 9,707,104 KiB
+      remained after iOS acceptance.
+- [ ] Command-line tools 22 resolve the provisional package revisions without
+      the current XML warning, and each image revision is recorded on its
+      assigned macOS arm64 or Linux/KVM host.
 
 ### G0-B — contract fixtures and ADR acceptance
 
@@ -211,19 +231,30 @@ bundled Gradle 9.0.0 wrapper are not accepted build inputs.
 ## Gate 0 exit checklist
 
 - [x] Consolidated implementation plan exists.
+- [x] Nine Gate 0 documents preserved in commit `3425a50` without changing the
+      original `main` checkout.
+- [x] Clean no-space G0-A worktree established with exact recursive submodule.
 - [x] GPT-5.6 contract, Android, and iOS audits completed independently.
 - [x] Exact Spark selector checked; unavailable and not silently substituted.
-- [x] Pinned Node installation located and fast verification completed.
+- [x] Pinned Node entry point accepted: Node 22.23.1, pnpm 10.34.0, Bash 3.2.57,
+      and 13/13 launcher fixtures; clean-commit fast verification passed.
 - [x] Independent GPT-5.6 Sol review accepts this packet as a hold-only
       orchestration boundary with no remaining P0/P1 finding.
-- [ ] Native Debug/Release/ASan baseline recorded (all component checks pass;
-      rerun the whole verifier after documentation freezes because its first
-      invocation detected these concurrent documentation additions).
-- [ ] Native TSan baseline recorded.
+- [x] Native Debug/Release/ASan baseline recorded by a whole-verifier exit-zero
+      rerun: 34/34 Debug/ASan tests, both bridge harnesses, fresh Release compile,
+      and both qualification timeout self-tests.
+- [x] Native TSan baseline recorded: 22/22 targeted concurrency tests passed.
 - [ ] Exact cached 0.5B model-backed baseline recorded.
-- [ ] Clean iOS Simulator build/test recorded from a no-space worktree.
+- [x] Clean iOS Simulator app release build recorded from the no-space worktree:
+      locked Pods, fresh DerivedData, 115-target generic arm64 build, and clean
+      result guard all passed on `2975d61`.
+- [ ] Clean iOS XCTest lane survives two clean prebuilds and passes on the named
+      iPhone 15 Pro / iOS 17.5 Simulator.
 - [ ] Clean iOS device-SDK build recorded from a no-space worktree.
-- [ ] Android SDK/NDK/CMake/image revisions installed and recorded.
+- [ ] The local project safety policy of at least 40 GiB Android
+      installation/build headroom is demonstrated.
+- [ ] Android SDK/NDK/CMake/image revisions are installed and recorded on their
+      assigned macOS arm64 and Linux/KVM hosts.
 - [ ] Exact Expo template and Gradle 8.13 post-prebuild regeneration are
       fixture-verified through two clean Android prebuilds.
 - [ ] Android x86_64/API-36 emulator lane runnable.
