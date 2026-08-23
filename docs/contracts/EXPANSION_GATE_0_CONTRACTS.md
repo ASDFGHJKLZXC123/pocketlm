@@ -1,11 +1,19 @@
-# Expansion Gate 0 contract freeze candidate
+# Expansion Gate 0 contract freeze
 
-Status: normative draft. Sections not explicitly marked open are frozen for
-task-packet design; no schema activation or runtime implementation is authorized
-until the Gate 0 exit review accepts the fixtures.
+Status: normative Gate 0B freeze accepted; overall Gate 0 remains open.
+Sections not explicitly marked open are frozen for fixture and task-packet
+design. No schema activation or runtime implementation is authorized until the
+overall Gate 0 exit criteria are satisfied and the applicable implementation
+gate is dispatched.
 Date: 2026-08-07.
 Open-evidence updated: 2026-08-23.
-Protocol basis: Inference Event Protocol v2 and C ABI `0x00020100`.
+Protocol basis: Inference Event Protocol 2.1 and current C ABI `0x00020100`.
+The future GGUF-inspector addition targets C ABI `0x00020200`; Gate 0B changes
+documents and fixture definitions only and does not bump the built ABI.
+Decision record:
+[Expansion Gate 0B contract decisions](./EXPANSION_GATE_0_DECISIONS.md).
+Acceptance evidence:
+[Gate 0B contract-fixture acceptance](../implementation-logs/GATE_0B_CONTRACT_FIXTURES_2026-08-23.md).
 
 ## Version map
 
@@ -18,22 +26,43 @@ Protocol basis: Inference Event Protocol v2 and C ABI `0x00020100`.
 | Runtime fingerprint | 1 | Memory/runtime identity only |
 | Device probe snapshot | 1 | Immutable pure-fact snapshot |
 | Model-manager snapshot | 1 | Native state authority |
+| Manager state | 1 | Closed durable native-manager journal; 4 MiB maximum |
+| Migration journal | 1 | Closed, resumable schema-1 conversion intent; 1 MiB maximum |
+| Quarantine record | 1 | Closed, non-loadable recovery evidence |
+| Runtime policy | 1 | Pure shared recommendation and runtime configuration |
 | GGUF facts | 1 | Bounded append-only C ABI payload |
-| Core C ABI | 2.2.0 / `0x00020200` | Append-only minor bump; existing v2 inference symbols remain unchanged |
+| Current core C ABI | 2.1.0 / `0x00020100` | Implemented inference ABI; existing v2 symbols remain unchanged |
+| Target expansion C ABI | 2.2.0 / `0x00020200` | Future append-only GGUF-inspector bump; not activated by Gate 0B |
 | Inference protocol | v2 + 2.1 amendment | Event grammar unchanged; amendment covers paths, leases, publication, and reload |
 
 Every extensible native struct starts with its exact size and independent
 version. Enum values are never reused or reordered. Control flow uses stable
 codes, never diagnostic messages.
 
+Every JSON wire object defined by this contract—including catalog v2 and
+installation record v2—whether persisted or returned across the bridge, is a
+closed shape: unknown keys are rejected unless a section explicitly declares
+an append-only object.
+Persisted objects also reject duplicate JSON keys, invalid UTF-8, and a UTF-8
+BOM. An explicitly versioned nested object is closed independently. A new field
+therefore requires a new containing schema version unless this document
+explicitly declares it append-only.
+
 ## Canonical scalar and byte encodings
 
 - Persisted timestamps use exactly `YYYY-MM-DDTHH:mm:ssZ`: four-digit years
   0001–9999, valid proleptic-Gregorian calendar fields, UTC only, and seconds
   00–59. Fractions, offsets, spaces, and leap-second `:60` are invalid. During
-  v1 migration, a valid ISO-8601 timestamp is converted to UTC and any
-  fractional second is truncated, not rounded. Timestamps are informational;
-  revisions, not clock values, order state.
+  v1 migration, the accepted source grammar is the strict extended RFC 3339
+  subset `YYYY-MM-DDTHH:mm:ss[.1-9digits](Z|+HH:MM|-HH:MM)`: Gregorian calendar
+  fields are valid, seconds are 00–59, and offsets do not exceed `14:00` in
+  either direction (an hour of 14 requires minutes `00`). Spaces, basic form,
+  week dates, ordinal dates, lowercase `z`, missing zones, and leap seconds are
+  rejected. The value is converted to UTC and fractional seconds are truncated
+  after conversion, never rounded. A grammatically valid source value is also
+  rejected if UTC conversion would leave the canonical persisted year range
+  0001–9999. Timestamps are informational; revisions, not clock values, order
+  state.
 - Manager and preference revisions are canonical arbitrary-precision decimal
   strings matching `0|[1-9][0-9]*`, with no sign, whitespace, leading zero,
   numeric conversion, maximum value, wrap, or exhaustion state. Implementations
@@ -46,10 +75,10 @@ codes, never diagnostic messages.
   The retained preference counter starts at `0` when no preference has ever
   existed; the first preference uses `1`. The counter remains in manager state
   while no preference file exists and increments for every preference replace
-  or clear. Revision digit strings are bounded only by the already bounded
-  manager-state file size; validation operates directly on the digits, so a
-  corrupt overlarge state file fails as `STORAGE_IO` rather than being parsed as
-  a machine integer.
+  or clear. Revision digit strings are bounded only by the 4 MiB manager-state
+  or 1 MiB migration-journal file limit containing them; validation operates
+  directly on the digits, so an overlarge file fails as `STORAGE_IO` before any
+  revision is parsed as a machine integer.
   `expectedRevision` always names the manager revision, never the preference
   revision.
 - Decimal fields in runtime-fingerprint input use canonical unsigned decimal
@@ -69,6 +98,19 @@ codes, never diagnostic messages.
   with a cryptographically secure random source and regenerated on any collision
   with current manager state or repository entries. The all-zero value is
   invalid.
+
+The canonical persisted-preference byte vector is the following 129-byte UTF-8
+sequence, expressed as an escaped string so its one terminal LF is explicit:
+
+```text
+{"schemaVersion":1,"revision":"1","modelId":"qwen2.5-0.5b-instruct-q4-k-m","origin":"manual","updatedAt":"2026-08-23T12:34:56Z"}\n
+```
+
+Its SHA-256 is
+`1d2f0c3518bcf1724dcbdfcb47ef294524106eef68814337a1e80da7312cceb7`.
+The same JSON without the terminal LF has SHA-256
+`0e9432efa89391020481022d8b87c8568077f4da88d1ec1fb7da4afa53a6a3f4`
+and is deliberately a different byte vector.
 
 ## Catalog v2
 
@@ -162,33 +204,66 @@ Normative invariants:
 - Builds embed the repository catalog bytes plus a separately generated SHA-256
   of those exact bytes. The catalog does not contain a self-referential digest.
 
-The 1.5B artifact identity is provisionally pinned as follows, but its model
-entry is not complete until the open GGUF and policy fields are verified:
+The independently authenticated 1.5B catalog identity and policy fields are
+frozen as follows:
 
 ```text
+id: qwen2.5-1.5b-instruct-q4-k-m
+displayName: Qwen2.5 1.5B Instruct (Q4_K_M)
+family: qwen2
 repository: Qwen/Qwen2.5-1.5B-Instruct-GGUF
 revision: 91cad51170dc346986eccefdc2dd33a9da36ead9
 artifactIntroducedRevision: dd26da440ef0330c47919d1ecae0966d24022222
 filename: qwen2.5-1.5b-instruct-q4_k_m.gguf
+sourceUrl: https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/91cad51170dc346986eccefdc2dd33a9da36ead9/qwen2.5-1.5b-instruct-q4_k_m.gguf
 byteSize: 1117320736
 sha256: 6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e
+ggufMagic: GGUF
+ggufVersion: 3
+quantization: Q4_K_M
+parameterCountApproximate: 1.78B
 license: Apache-2.0
 licenseUrl: https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/91cad51170dc346986eccefdc2dd33a9da36ead9/LICENSE
 licenseByteSize: 11343
 licenseSha256: 832dd9e00a68dd83b3c3fb9f5588dad7dcf337a0db50f7d9483f310cd292e92e
+gated: false
+initialContextTokens: 2048
+minTotalRamBytes: 4294967296
+recommendedRamBytes: 6442450944
+chatTemplateSource: gguf_metadata
+chatTemplateVerified: true
+appDirectoryName: qwen2.5-1.5b-q4km
+installedFilename: model.gguf
+requiredMetadata.general.architecture: qwen2
+requiredMetadata.general.file_type: 15
+requiredMetadata.tokenizer.ggml.model: gpt2
+requiredMetadata.tokenizer.ggml.pre: qwen2
+requiredMetadata.tokenizer.chat_template.nonEmpty: true
+requiredMetadata.tokenizer.chat_template.byteSize: 2509
+requiredMetadata.tokenizer.chat_template.sha256: d5495a1e5db0611132a97e46a65dbb64a642a499421228b9c8b93229097fa9a4
+requiredMetadata.tokenizer.chat_template.contains: <|im_start|>, <|im_end|>, add_generation_prompt
 ```
 
-The license fixture at that revision is 11,343 bytes with SHA-256
+The independent full-file inspection records GGUF v3, 339 tensors, 26 metadata
+key/value entries, 32-byte alignment, data offset 5,950,496, and exact parameter
+count 1,777,088,000. Alignment, data offset, and exact parameter count are
+evidence facts rather than additional catalog-v2 fields. The license fixture at
+that revision is 11,343 bytes with SHA-256
 `832dd9e00a68dd83b3c3fb9f5588dad7dcf337a0db50f7d9483f310cd292e92e`.
 
 The authenticated 0.5B artifact's v2 chat-template requirement is independently
 read from the local GGUF as 2,509 UTF-8 bytes with SHA-256
 `d5495a1e5db0611132a97e46a65dbb64a642a499421228b9c8b93229097fa9a4`.
+Its full-file inspection records GGUF v3, 291 tensors, and 26 metadata entries.
 The catalog-v2 fixture must record those exact values in addition to the three
 existing required fragments.
 Its pinned Apache-2.0 license bytes at catalog revision
 `9217f5db79a29953eb74d5343926648285ec7e67` have the same 11,343-byte size and
 SHA-256 `832dd9e00a68dd83b3c3fb9f5588dad7dcf337a0db50f7d9483f310cd292e92e`.
+The 0.5B model freezes `initialContextTokens = 2048`,
+`minTotalRamBytes = 2147483648`, and `recommendedRamBytes = 4294967296`.
+The 0.5B and 1.5B artifacts therefore share the exact 2,509-byte authenticated
+chat template, but retain independent artifact and publication identities.
 
 ## Runtime fingerprint v1
 
@@ -214,6 +289,19 @@ Catalog strings that can enter the fingerprint cannot contain NUL.
 frozen inference API, not session-load state. Policy resolves and records the
 actual `nThreads` on every generation/qualification request; changing it does
 not require a model-session switch.
+
+The canonical fingerprint fixture uses these fields:
+
+```text
+modelId: qwen2.5-0.5b-instruct-q4-k-m
+artifactSha256: 74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db
+publicationId: 0123456789abcdef0123456789abcdef
+contextSize: 2048
+requestedAccelerator: auto
+gpuLayers: 0
+policyProfileVersion: 1
+sha256: 9045afb4538b981664b35371a4d2054fd5408409199f448ede2c31a2a61f5177
+```
 
 ## Installation record and commit marker
 
@@ -274,6 +362,16 @@ An installation is loadable only when all of these are true:
   inspection facts; and
 - backup exclusion has succeeded.
 
+Ordinary loading always rejects a record without a matching commit marker. A
+markerless record may be adopted only while startup holds exclusive authority
+and a matching durable transfer or migration intent names the same model and
+target publication. Adoption rehashes the exact raw record and model bytes,
+re-runs catalog and GGUF comparison, re-verifies canonical path, permissions,
+file protection, and backup exclusion, proves that no competing active,
+staging, rollback, or intent exists, and then writes/fsyncs/renames the exact
+intent-frozen marker last. A markerless record without that unique intent is
+stray metadata and is quarantined; it is never inferred or adopted heuristically.
+
 A catalog addition does not invalidate another record. Unknown/newer records are
 unsupported and must not be automatically deleted on downgrade.
 
@@ -282,6 +380,43 @@ three independent final-path renames. Replacement uses the directory-swap
 protocol defined below so failure cannot destroy the prior committed bytes.
 
 ## Schema-1 migration
+
+The migration journal is a closed JSON object with a 1 MiB maximum exact file
+size:
+
+```ts
+type MigrationPhaseV1 =
+  | 'prepared'
+  | 'recordWritten'
+  | 'markerWritten'
+  | 'preferenceWritten'
+  | 'counterAdvanced'
+  | 'complete';
+
+type MigrationJournalV1 = {
+  schemaVersion: 1;
+  sourceManifestSha256: string;
+  modelId: string;
+  selectedIntent: 'selected';
+  nextPreferenceRevision: string;
+  preferenceBytesUtf8: string;
+  preferenceBytesSha256: string;
+  phase: MigrationPhaseV1;
+  targetPublicationId: string;
+  installedAt: string;
+  targetManifestBytesUtf8: string;
+  targetManifestSha256: string;
+  targetMarkerBytesUtf8: string;
+  targetMarkerBytesSha256: string;
+};
+```
+
+The byte strings contain the exact no-BOM persisted bytes, including any
+terminal newline. Each adjacent digest authenticates exactly that string's
+UTF-8 bytes. `installedAt` is the already converted canonical persisted
+timestamp and is reused byte-for-byte on every retry. Unknown fields, invalid
+phase transitions, an overlarge file, or any byte/digest disagreement fail
+closed before migration mutates the generation.
 
 Migration runs under the native repository's exclusive authority. It validates
 the existing v1 pair against the current 0.5B entry, rehashes and inspects the
@@ -295,7 +430,7 @@ v2 record, atomically renames it and fsyncs the parent, and
 writes/renames/fsyncs the marker last. After the v2 generation is loadable it
 atomically writes/fsyncs `selected-preference.json` with that model and
 `origin = 'migrated'`, atomically advances/fsyncs the retained manager-state
-preference counter to the journal's exact `nextRevision`, and only then marks
+preference counter to the journal's exact `nextPreferenceRevision`, and only then marks
 complete and removes the migration journal. The model is not moved or downloaded
 again.
 
@@ -306,15 +441,17 @@ a stale retained counter advances/fsyncs that counter from the journal before
 cleanup. Preference-write/fsync or counter-write/fsync failure keeps repair
 incomplete and the journal durable, so fallback is not persisted and mutators
 stay disabled.
-A conflicting valid preference or journal/source hash mismatch fails closed.
-A valid v2 record without a marker is reverified and may be adopted. Migration
-activates only after v2 readers, writers, and fixtures are green in TypeScript,
-Ruby, and native code.
+A conflicting valid preference or journal/source/target hash mismatch fails
+closed. A valid v2 record without a marker is adoptable only through the unique
+durable-intent procedure above; otherwise it is quarantined. Migration activates
+only after v2 readers, writers, and fixtures are green in TypeScript, Ruby, and
+native code.
 
 ## Preference and active-session semantics
 
 ```ts
 type SelectionOrigin = 'manual' | 'recommended' | 'migrated' | 'fallback';
+type RequestedSelectionOrigin = 'manual' | 'recommended';
 
 type SelectedPreferenceV1 = {
   schemaVersion: 1;
@@ -343,6 +480,11 @@ records. `activeFingerprint` is process memory only and exists only after native
 load, diagnostics validation, and read-lease acquisition succeed.
 `SelectedPreferenceV1.revision` and `updatedAt` use the canonical preference
 revision and timestamp rules above.
+JavaScript may request only `manual` or `recommended` through
+`setSelectedPreference`. `migrated` and `fallback` are native-manager origins
+reserved for migration and deterministic repair. Supplying either reserved
+origin through the public mutator rejects as `INVALID_ARGUMENT` before receipt
+creation.
 The next preference revision and exact desired preference bytes (or clear
 intent) are frozen in the command receipt or migration journal before touching
 the preference file. The file is replaced/removed and its parent fsynced before
@@ -360,8 +502,9 @@ Required transitions:
 - initial-load failure leaves preference unchanged and active null;
 - switching cancels generation, awaits terminal delivery, awaits unload, clears
   active, then loads the desired fingerprint;
-- only a successful desired load atomically commits the new preference and
-  active fingerprint;
+- only after a successful desired load may the controller begin the ordered
+  commit: first make the new preference durable, then publish the active
+  fingerprint;
 - preference is committed before the desired fingerprint is published as
   active. Until then, the successfully loaded desired native session is an
   internal staged session and accepts no inference request;
@@ -393,11 +536,15 @@ mutation authority. Manual selection of an invalid or uninstalled model fails.
 ## Native repository, leases, and canonical paths
 
 Each platform owns one process-lifetime `ModelRepository`, shared by inference
-and model management and never owned by React state. Its key is model ID,
-publication ID, and canonical file identity.
+and model management and never owned by React state. A bound read-lease key is
+model ID, publication ID, and canonical file identity.
 
-- Load obtains a pending/read lease before validation/open and holds it through
-  join-before-free destruction.
+- Load first obtains a per-model pending admission that excludes writers. While
+  holding it, native code performs no-follow path validation/open and obtains
+  canonical file identity from the opened handle. It atomically promotes the
+  pending admission to the bound `(modelId, publicationId, canonical file
+  identity)` read lease before writer exclusion can lapse, and holds that lease
+  through join-before-free destruction.
 - Publish, replace, delete, and repair require an exclusive lease.
 - A writer never calls unload while holding exclusive authority. It returns
   `MODEL_IN_USE` with blocking session IDs; the switch controller unloads and
@@ -431,6 +578,61 @@ The repository layout is fixed for v1.1:
 <root>/.quarantine/<modelId>/<quarantineId>/...
 <root>/.deleting/<modelId>/<commandId>/...
 ```
+
+Each quarantine directory contains one closed `quarantine.json` record:
+
+```ts
+type QuarantineReasonV1 =
+  | 'INVALID_ACTIVE'
+  | 'UNAUTHORIZED_STAGING'
+  | 'AMBIGUOUS_STAGING'
+  | 'INVALID_ROLLBACK'
+  | 'AMBIGUOUS_ROLLBACK'
+  | 'PUBLICATION_FAILED'
+  | 'MISSING_COMMIT_MARKER'
+  | 'PROTECTION_DRIFT'
+  | 'BACKUP_EXCLUSION_DRIFT'
+  | 'MIGRATION_CONFLICT';
+
+type QuarantineRecordV1 = {
+  schemaVersion: 1;
+  quarantineId: string;
+  modelId: string;
+  publicationId: string | null;
+  sourceKind: 'active' | 'staging' | 'rollback';
+  reason: QuarantineReasonV1;
+  createdManagerRevision: string;
+  quarantinedAt: string;
+  byteSize: number;
+};
+```
+
+The record is immutable after the quarantine directory and its index entry are
+durable. A replacement quarantine always receives a new quarantine ID.
+`byteSize` is the exact sum of regular-file bytes retained from the quarantined
+generation, excluding `quarantine.json` itself, and is included in
+install/replacement disk-space preflight. A
+quarantine is never loadable. At most one quarantine is retained per model. If
+repair encounters more than one, it retains the record with the greatest
+canonical manager revision and removes older entries only after repair has
+completed; equal revisions or malformed records fail closed. There is no
+age-based deletion. The retained newest quarantine remains until a successful
+reinstall/replacement commits that model or the user explicitly chooses
+`Delete damaged files`. A successful commit makes removal mandatory; repair is
+not complete until directory removal, parent fsync, and the manager-state index
+replacement are durable. When no valid active
+generation exists but a quarantine does, the snapshot reports `invalid`, and
+the user-visible actions are `Retry install` and `Delete damaged files`.
+`Delete damaged files` invokes the quarantine-target branch of
+`deleteInstallation`; its receipt freezes the exact quarantine ID before any
+rename or removal.
+
+The manager-state `quarantines` array is the durable index of these records and
+must agree field-for-field with every retained `quarantine.json`. Quarantine
+directory creation/rename and parent fsync precede the manager-state replacement.
+Startup may index a uniquely valid crash-left directory; an indexed missing
+directory, byte/count disagreement, or ambiguous directory set fails closed
+before cleanup or manager readiness.
 
 `<appDirectoryName>` is the only active/loadable generation. A staging directory
 contains a complete candidate generation. A rollback directory contains the
@@ -502,14 +704,79 @@ interface DeviceProbeSpec {
 
 Numbers are finite nonnegative safe integers; processor counts are positive and
 active does not exceed total when known. A missing CPU frequency is null, not
-zero. iOS uses raw `availableMemoryBytes = 0` as the unknown sentinel and shared
+zero. Android's `maxFrequencyKhzByCpu` length is exactly `processorCount`.
+iOS uses raw `availableMemoryBytes = 0` as the unknown sentinel and shared
 policy normalizes it to null. Simulator facts remain advisory and never hide or
 block a model. A missing/rejected/malformed module selects a safe policy fallback
 and makes no recommendation claim. The probe has no mutators and logs no device
 identifier. Android snapshots require `android`; iOS snapshots forbid it.
-Limitations are unique and appear in the enum order above;
-`CPU_FREQUENCY_UNKNOWN` is Android-only, while `SIMULATOR_HOST_FACTS` is present
-exactly when `isSimulator` is true.
+Limitations are unique and appear in the enum order above.
+`AVAILABLE_MEMORY_UNKNOWN` is present exactly for iOS when
+`availableMemoryBytes == 0` and is forbidden otherwise.
+`CPU_FREQUENCY_UNKNOWN` is present exactly for Android when at least one
+frequency array element is null and is forbidden otherwise.
+`SIMULATOR_HOST_FACTS` is present exactly when `isSimulator` is true.
+
+## Runtime policy profile v1
+
+Policy is a pure shared function over a validated catalog and probe. Catalog
+order from first to last is increasing recommendation rank. Recommendation
+chooses the greatest-index catalog model whose `recommendedRamBytes` is no
+greater than `totalMemoryBytes`. If none qualifies, it chooses the first catalog
+model whose `minTotalRamBytes` is no greater than total memory. If no model
+meets its minimum, recommendation is null. A missing, rejected, or malformed
+probe likewise produces recommendation null and no device-fit claim.
+Recommendation profile v1 uses total memory only. Available memory,
+`isLowRamDevice`, disk, processor frequency, dot-product support, and benchmark
+results may produce diagnostics or preflight failures but do not change the
+recommended model.
+
+This recommendation never overwrites a durable `manual` preference. A user may
+manually select any committed valid model even below its recommended or minimum
+RAM value; it remains visible and receives a warning rather than a block.
+Simulator results use the same calculation for preview but are explicitly
+advisory, make no physical-device claim, and never hide or block a choice.
+
+The profile-v1 session configuration is exact:
+
+```text
+contextSize = selected catalog entry.initialContextTokens
+requestedAccelerator = auto
+gpuLayers = 0
+policyProfileVersion = 1
+```
+
+Generation `nThreads` is resolved independently on every request:
+
+- missing or malformed probe: `0` (native automatic selection);
+- iOS: `min(activeProcessorCount, 4)`;
+- Android with any null frequency: `min(activeProcessorCount, 4)`; and
+- Android with all frequencies known: let `M` be the maximum frequency, count
+  entries `f` satisfying the exact integer comparison `10 * f >= 9 * M`, and
+  clamp the result to `[1, min(activeProcessorCount, 4)]`.
+
+Checked integer arithmetic is used for the 90-percent comparison. Policy does
+not persist benchmark calibration, retune automatically, or change a loaded
+session merely because the per-request thread count changes. Boundary fixtures
+include at least:
+
+| Input | Expected recommendation/result |
+| --- | --- |
+| total RAM `2147483647` | null |
+| total RAM `2147483648` | 0.5B by minimum |
+| total RAM `4294967295` | 0.5B |
+| total RAM `4294967296` | 0.5B by recommendation |
+| total RAM `6442450943` | 0.5B |
+| total RAM `6442450944` | 1.5B by recommendation |
+| missing/malformed probe | recommendation null; safe configuration and `nThreads = 0` |
+| iOS active processors `1`, `4`, `5` | threads `1`, `4`, `4` |
+| Android frequencies `[100, 90, 89]` | threads `2` |
+| Android frequencies `[100, null, 90]`, active `3` | threads `3` |
+| Android eight qualifying frequencies, active `1` | threads `1` |
+
+The safe configuration used when probe facts are absent remains context 2,048,
+AUTO, GPU layers 0, policy profile 1, and native automatic threads 0. It is a
+runtime fallback only and carries no recommendation claim.
 
 ## Model-manager snapshot and API
 
@@ -581,6 +848,9 @@ Snapshot validity is normative:
 
 - `models` contains exactly the current catalog models in catalog order.
   `modelId` comparisons remain exact and case-sensitive.
+- A nonnull `selectedPreference` names exactly one catalog model whose same
+  snapshot entry is `committed`; any missing, unknown, duplicate, or
+  noncommitted target makes the entire snapshot malformed.
 - `publicationId` is a valid nonzero publication ID exactly when
   `installState == 'committed'`; it is null for `missing`, `invalid`,
   `repairing`, and `deleting`. `repairing` is allowed only while
@@ -637,6 +907,10 @@ staging/resume state. Pause may yield a paused state without resume data;
 `resumeInstall` remains accepted and restarts from the pinned original URL.
 Repeated control commands are
 idempotent. Failed replacement preserves the old committed publication.
+For an `invalid` model backed only by quarantine evidence, `startInstall` is the
+`Retry install` action and `deleteInstallation` is the `Delete damaged files`
+action. Neither action makes quarantined bytes loadable; both remain subject to
+revision, receipt, lease, and repair-complete rules.
 
 Stable terminal/rejecting error codes:
 
@@ -661,7 +935,7 @@ interface ModelManagerSpec {
   resumeInstall(modelId: string, operationId: string, commandId: string, expectedRevision: string): Promise<void>;
   cancelInstall(modelId: string, operationId: string, commandId: string, expectedRevision: string): Promise<void>;
   deleteInstallation(modelId: string, commandId: string, expectedRevision: string): Promise<void>;
-  setSelectedPreference(modelId: string, origin: SelectionOrigin, commandId: string, expectedRevision: string): Promise<void>;
+  setSelectedPreference(modelId: string, origin: RequestedSelectionOrigin, commandId: string, expectedRevision: string): Promise<void>;
   resolveLoadPath(modelId: string): Promise<{ canonicalPath: string; publicationId: string }>;
   addListener(name: 'onModelManagerChanged'): void;
   removeListeners(count: CodegenTypes.Int32): void;
@@ -719,6 +993,7 @@ type CommandReceiptV1 = {
   targetOperationId: string | null;
   createdOperationId: string | null;
   targetPublicationId: string | null;
+  targetQuarantineId: string | null;
   selectionReleasePlan: SelectionReleasePlan | null;
   preferenceMutation: PreferenceMutationPlan | null;
   phase: 'prepared' | 'effectCommitted' | 'terminal';
@@ -731,12 +1006,68 @@ type CommandReceiptV1 = {
 };
 ```
 
+`manager-state-v1.json` is a closed object whose exact persisted UTF-8 file is
+at most 4 MiB:
+
+```ts
+type DurableTransferV1 = {
+  schemaVersion: 1;
+  modelId: string;
+  operationId: string;
+  artifactSha256: string;
+  sourceRevision: string;
+  sourceFilename: string;
+  expectedBytes: number;
+  state: Exclude<TransferState, 'idle'>;
+  bytesReceived: number | null;
+  durablePartialBytes: number | null;
+  hasResumeData: boolean;
+  error: ModelManagerError | null;
+  warnings: readonly ModelManagerWarning[];
+};
+
+type ManagerStateV1 = {
+  schemaVersion: 1;
+  revision: string;
+  preferenceRevisionCounter: string;
+  catalogDigest: string;
+  transfers: readonly DurableTransferV1[];
+  commandReceipts: readonly CommandReceiptV1[];
+  quarantines: readonly QuarantineRecordV1[];
+};
+```
+
+There is at most one durable transfer per model; transfers appear in catalog
+order and each freezes the exact source/artifact identity for its operation.
+No transfer entry means snapshot transfer `idle`. Receipt entries appear in
+increasing `preparedManagerRevision`; their phase invariants remain those below.
+Quarantine records are in catalog order and obey the one-per-model retention
+rule. The bootstrap file is revision `0`, preference revision counter `0`, the
+current exact catalog digest, and three empty arrays.
+
+Opaque iOS resume data, HTTP validators and redirected URLs, Android partial
+storage details, and enumerated platform task/service handles remain in
+platform-native private storage keyed only by `operationId`. They never enter
+this shared file, manager snapshots, events, diagnostics, or logs. The shared
+durable byte count and resume-data boolean are claims reconciled against that
+private state during repair before readiness.
+
+Before a replacement would exceed 4 MiB, the manager first applies the
+deterministic completed-receipt eviction rule. It retains at most the 256
+completed receipts with greatest terminal revisions plus every nonterminal
+receipt. If the exact closed state still cannot fit, readiness or the mutator
+fails closed with `STORAGE_IO` before any new external effect.
+
 Nullability and method associations are exact: accepted `startInstall` alone
 sets `createdOperationId`; pause/resume/cancel alone set `targetOperationId`;
-accepted delete and preference-change receipts set `targetPublicationId`; delete
-alone sets `selectionReleasePlan`. A selected target uses `fallback` or `clear`;
-an unselected target uses `none`, with no preference mutation, although any read
-lease still must be unloaded before tombstoning. Delete and preference change set
+and accepted preference-change receipts set `targetPublicationId`. Accepted
+delete alone sets `selectionReleasePlan` and exactly one immutable target:
+`targetPublicationId` for a committed generation or `targetQuarantineId` for a
+quarantine-only invalid installation. Every non-delete receipt has null
+`targetQuarantineId`. A selected committed target uses `fallback` or `clear`;
+an unselected committed target and a quarantine-only target use `none`, with no
+preference mutation, although any read lease still must be unloaded before a
+committed generation is tombstoned. Delete and preference change set
 `preferenceMutation` exactly when they will write or clear preference. For a
 write, `bytesUtf8` contains the exact no-BOM preference-file bytes and its digest
 must match; for clear, no preference bytes are present. An effect step belongs
@@ -774,6 +1105,20 @@ cancelInstall:         cancelInstall, modelId, operationId, expectedRevision
 deleteInstallation:    deleteInstallation, modelId, expectedRevision
 setSelectedPreference: setSelectedPreference, modelId, origin, expectedRevision
 ```
+
+The canonical command-digest fixture uses model ID
+`qwen2.5-0.5b-instruct-q4-k-m`, expected revision
+`100000000000000000000000000000000000000`, operation ID
+`11111111111111111111111111111111`, and origin `manual`:
+
+| Method | SHA-256 |
+| --- | --- |
+| `startInstall` | `5a6eedf062da7828ccf754fbd17eaf179b2c2d4a78a709f83323c3800276315d` |
+| `pauseInstall` | `58ae358c1f67be1963c2bb2195412485df16ff6cdf1f8806f62b05bf55ce1a04` |
+| `resumeInstall` | `912ce7671ca1bd212a014d69680da299ad11695e83be4cab73a17356d1935197` |
+| `cancelInstall` | `f8c8113e7f515f113a8770091cc19132f9f0130861b4101440050861b66d00c8` |
+| `deleteInstallation` | `b391396a55a95bf57126c9f14b50419ce519bd94c95d063d6b59d10f71af94d5` |
+| `setSelectedPreference` | `d07c6d2d95a88e1fe4890a06b8e9b9904df9d05c8b11de82df97fbbafebffd5e` |
 
 `commandId` is deliberately excluded. Method and model ID are exact
 case-sensitive strings; revisions and IDs use their canonical encodings above.
@@ -816,8 +1161,8 @@ against durable filesystem/OS evidence:
   The desired already-achieved state completes successfully; an intermediate
   state resumes the idempotent transition; a different/newer operation resolves
   `INVALID_STATE`.
-- delete receipts persist the exact target publication and a selection-release
-  plan: either the exact committed fallback model/publication or an explicit
+- delete receipts targeting a committed generation persist its exact target
+  publication and a selection-release plan: either the exact committed fallback model/publication or an explicit
   clear-preference plan for the only valid selected installation, or `none` for
   an unselected installation. Their method-specific
   effect phases are `selectionReleased` and `tombstoned`. Before
@@ -836,6 +1181,14 @@ against durable filesystem/OS evidence:
   A different active publication, changed fallback identity, or renewed lease
   fails closed rather than being deleted. Thus replay cannot delete a selected,
   leased, or later publication.
+- delete receipts targeting a quarantine-only invalid installation persist the
+  exact immutable quarantine ID, null target publication, `none` selection plan,
+  and no preference mutation. Replay may rename only that exact directory to
+  `.deleting/<modelId>/<commandId>` and fsync both parents before retaining the
+  `tombstoned` effect. Its tombstone or absence completes deletion, but a
+  different/newer quarantine ID is never removed. Thus `Delete damaged files`
+  uses `deleteInstallation` without allowing model-ID-only replay to delete
+  later recovery evidence.
 - preference change compares the exact durable preference contents; a match is
   success, otherwise the originally validated atomic write is retried only while
   its model/publication precondition still holds.
@@ -914,13 +1267,45 @@ UTF-8 and never truncated. The caller zeroes structs and sets exact size/version
 On success, `chat_template_length` is the UTF-8 payload length excluding a
 terminating NUL, `required_chat_template_capacity` is that length plus one,
 `chat_template_capacity` is the caller allocation size including the NUL, and
-the inspector writes the exact payload followed by one NUL. A null buffer is
-allowed only with zero capacity as a sizing request. `BUFFER_TOO_SMALL` returns
-the required allocation capacity but writes no partial template and returns no
-trusted facts. The fixed architecture/tokenizer lengths likewise exclude their
-required trailing NUL. A template payload over 1 MiB fails with
-`PLM_GGUF_FIELD_TOO_LARGE`; the maximum successful caller allocation is therefore
-1 MiB plus one byte.
+the inspector writes the exact payload followed by one NUL.
+
+A null chat-template buffer with capacity zero is the canonical sizing request.
+It returns `PLM_GGUF_OK`, returns all trusted facts including
+`required_chat_template_capacity`, and writes no template bytes. A nonnull
+buffer whose capacity is smaller than the required capacity returns
+`PLM_GGUF_BUFFER_TOO_SMALL`, writes no partial template, and defines only
+`required_chat_template_capacity`; every other output field is zero. On every
+other writable-output error all output fields are zero. A null buffer with
+nonzero capacity, or a nonnull buffer with zero capacity, is
+`PLM_GGUF_INVALID_ARGUMENT`.
+
+The fixed architecture/tokenizer lengths likewise exclude their required
+trailing NUL. An empty chat template is valid parser output with length zero and
+required capacity one; the platform catalog comparison rejects it as
+`METADATA_MISMATCH` because the catalog requires `nonEmpty: true`. A template
+payload over 1 MiB fails with `PLM_GGUF_FIELD_TOO_LARGE`; the maximum successful
+caller allocation is therefore 1 MiB plus one byte.
+
+GGUF facts version 1 accepts GGUF wire version 3 only. After matching the GGUF
+magic, wire versions 1, 2, 4, and every other value return
+`PLM_GGUF_UNSUPPORTED_VERSION`; no metadata field is interpreted and all
+writable facts are zeroed.
+
+Platform adapters map inspector and comparison outcomes exactly:
+
+- bad magic, unsupported version, truncation, corrupt structure, duplicate key,
+  missing field, wrong type, or invalid UTF-8 -> `GGUF_INVALID`;
+- count limit, arithmetic overflow, or field too large -> `GGUF_BOUNDS`;
+- inspector I/O -> `STORAGE_IO`, and non-regular/path rejection ->
+  `PATH_REJECTED`;
+- invalid arguments, internal errors, or a buffer-sizing protocol violation by
+  the adapter -> `INTERNAL`; and
+- a successfully parsed file whose facts disagree with the frozen catalog,
+  including an empty template, -> `METADATA_MISMATCH`.
+
+`CATALOG_DRIFT` remains reserved for the bundled catalog byte identity changing
+against an already durable manager operation; GGUF fact disagreement itself is
+`METADATA_MISMATCH`. Complete-file digest disagreement remains `HASH_MISMATCH`.
 
 Parser limits to fixture before implementation:
 
@@ -984,11 +1369,23 @@ the following deterministic cases:
 - active absent, valid staging and valid rollback present: restore rollback;
   keep staging resumable or quarantine it according to transfer state;
 - active invalid, valid rollback present: quarantine active, restore rollback;
+- active invalid and rollback absent: quarantine active and establish that the
+  active generation is missing; because retained quarantine evidence exists,
+  the public snapshot reports `invalid` until retry or explicit damaged-file
+  deletion;
+- active absent with only invalid rollback state: quarantine that rollback and
+  establish the same missing-active/invalid-snapshot result;
 - active absent, valid complete staging and no rollback: promote staging only
   when its persisted transfer state authorizes `awaitingPublication`;
-- multiple rollback candidates, disagreement, invalid marker, or ambiguous
-  persisted state: fail closed and require explicit repair evidence rather than
-  guessing; and
+- multiple staging candidates: only the one exact directory named by the
+  persisted transfer's `operationId` may proceed, and only when it is the unique
+  complete valid candidate. Unauthorized or ambiguous candidates are
+  quarantined and repair fails closed rather than choosing by time or path;
+- a complete staging generation without an authorizing durable transfer is
+  quarantined and never promoted;
+- multiple rollback candidates, disagreement, invalid marker, or any remaining
+  ambiguous persisted state: fail closed and require explicit repair evidence
+  rather than guessing; and
 - partial staging is resumable or quarantined but never loadable.
 
 Preference never makes an uncommitted artifact loadable. Cleanup and quarantine
@@ -997,25 +1394,46 @@ generation or established that the model is missing.
 
 ## Required fixture families
 
+The language-neutral corpus root is
+`fixtures/expansion-gate-0/fixture-set-v1`. Its closed inventory pins every
+member's exact bytes and SHA-256; the family files below are contract data only
+and do not activate any production schema.
+
+- Canonical: persisted and migration timestamp grammar; arbitrary-precision
+  decimal validation/comparison/increment; lowercase digest and nonzero ID
+  grammar; exact raw-byte digests; six normalized command digests; and the
+  runtime-fingerprint vector.
 - Catalog: valid one/two-entry v2; legacy v1; empty/unknown; duplicate identity;
   exact and ASCII-casefold ID/directory/resolved-path collision; unsafe names;
   repository grammar and exact source/license URL mismatch; integer bounds;
   RAM inversion; unknown metadata
   key/predicate; UTF-8 exact-comparison, size/hash/fragment, metadata, and
   template mismatch; non-Apache license, mutable/wrong-revision license URL, and
-  license size/hash drift.
+  license size/hash drift; exact authenticated 0.5B/1.5B template equality; and
+  all policy byte fields at their exact boundaries.
 - Installation: real schema-1 pair; valid v2 per model; unknown/illegal selected
   fields; artifact/path/publication/marker disagreement; invalid time; backup
   exclusion false; record without marker; incomplete/complete staging; active
-  moved to rollback; active plus rollback; invalid active plus valid rollback;
-  unresolved multiple rollbacks; adoptable migration metadata; corrupt
-  quarantine; protection/exclusion failure before marker; and post-promotion
+  moved to rollback; active plus rollback; invalid active with and without valid
+  rollback; invalid-only rollback; authorized, unauthorized, and multiple
+  staging; unresolved multiple rollbacks; uniquely adoptable and stray
+  markerless records; adoptable migration metadata; quarantine-on-recovery;
+  protection/exclusion failure before marker; and post-promotion
   protection/exclusion drift with rollback restoration.
+- Quarantine: closed valid and unknown-field records; every stable reason;
+  equal-revision ambiguity; greatest-revision retention after repair;
+  one-per-model indexing; corrupt or missing record disagreement; no age-based
+  deletion; preflight byte accounting; never-loadable behavior; retry,
+  successful-reinstall, and explicit damaged-file deletion outcomes.
 - Preference: every origin; missing/unknown/corrupt/newer; selected deletion and
   deterministic fallback; migration crash before/after v2 marker and preference;
-  preference fsync retry; canonical timestamp and arbitrary-precision revision
-  increment/comparison; exact
-  raw-byte source-manifest digest; and journal/source/preference disagreement.
+  preference fsync retry; canonical persisted timestamps; every accepted and
+  rejected migration-source timestamp form; arbitrary-precision revision
+  increment/comparison; the exact 129-byte preference vector and newline
+  omission counter-vector; exact raw-byte source-manifest digest; every
+  migration phase; 1 MiB boundary; unknown field; and
+  journal/source/target/preference
+  disagreement.
 - Snapshot: every install/transfer/error/warning state; invalid combinations;
   Android exact partial; iOS null partial and resume cases; stale revision;
   receipt-before-revision replay after process death; different-argument command
@@ -1026,7 +1444,15 @@ generation or established that the model is missing.
   effect-revision ordering; selected fallback/clear and unselected `none`
   deletion plans; start-handoff terminal timing; and crash at
   prepared/effect-committed/terminal for every
-  mutator, including OS task enumeration and delete tombstone recovery.
+  mutator, including OS task enumeration and delete tombstone recovery. Manager
+  state fixtures include bootstrap, closed/unknown-field rejection, the 4 MiB
+  boundary, platform-private-data exclusion, durable transfer invariants, and
+  exact completed/nonterminal receipt retention.
+- Probe and policy: every limitation and exact iff invariant; iOS/Android closed
+  shapes; frequency-array length; missing/malformed/simulator behavior; all RAM
+  boundaries above; manual-origin precedence and warnings; reserved-origin
+  rejection; iOS/Android/missing-probe thread vectors; safe configuration; and
+  the exact runtime-fingerprint vector.
 - Paths: traversal and encoding tricks; prefix/wrong-case; invalid scalars/NUL;
   symlink parent/final; hardlink; outside root; staged/quarantined; marker drift.
 - Leases: multiple readers; queued writer; load/unload failures; destroy before
@@ -1036,9 +1462,30 @@ generation or established that the model is missing.
   preference-clear/delete failure windows.
 - GGUF: valid minimal facts; exact caps and cap+1; truncation at every field; bad
   magic/version; overflow counts; duplicate/invalid UTF-8/wrong-type/missing
-  metadata; empty/oversized template; expectation mismatch; buffer-too-small;
-  exact payload/capacity/NUL behavior; proof that no inference session is
-  constructed.
+  metadata; parser-success empty template followed by metadata mismatch;
+  oversized template; expectation mismatch; successful null/zero sizing;
+  buffer-too-small with only required capacity defined; zero outputs on other
+  errors; exact result-code mapping; exact payload/capacity/NUL behavior; and
+  proof that no inference session is constructed.
+
+All byte-bearing fixtures include the exact file bytes and detached digest.
+Every invalid fixture declares one primary stable rejection class. It may
+combine correlated violations when all lead to that same outcome; a fixture
+used to establish result-code precedence isolates the competing rule. Behavioral
+path, lease, publication, and crash fixtures use deterministic scenario
+descriptions and barriers rather than timing races.
+
+## Gate 0B non-activation boundary
+
+Gate 0B changes only this contract, its decision record, the Protocol 2.1
+documentation amendment, the language-neutral fixture corpus, its test-only
+Ruby verifier, and fast-verification wiring that invokes that verifier. It does
+not change production TypeScript/Ruby/C++ schema readers, the production
+schema-1 catalog, CMake, codegen ownership or output, JNI/Objective-C++
+adapters, Android or iOS runtime behavior, downloaders, persistence activation,
+or the built C ABI.
+Fixture-v2 catalog entries are test data only; the second production catalog
+model is added only after the serialized activation gates below.
 
 ## Contract-sensitive landing constraints
 
@@ -1058,27 +1505,22 @@ persistence, switch, or snapshot contracts. The C ABI 2.2 inspector core/host
 tests may overlap only the tail of Gate 2 and must be accepted before either
 platform adapter consumes it. The repository/lease/path validator follows the
 switch-state contract. The model-manager snapshot/spec lands exactly once before
-platform implementations. Final model pins, policy profile, application version,
-and release claims land last.
+platform implementations. Production activation of the final model pins and
+policy profile, the application version, and release claims land last.
 
 Codegen/lockfiles, schema activation/migration, ABI/consumers, switch mutation
 state, and shared snapshot enums must never be changed concurrently.
 
-## Open Gate 0 evidence
+## Open overall Gate 0 evidence
 
-The following prevent this document from becoming an accepted freeze:
+Gate 0B's contract and fixture freeze is accepted. The following still prevent
+overall Gate 0 exit:
 
 - exact attached Android and iOS hardware facts;
 - assigned Linux/KVM installation evidence for the API-36 Google APIs x86_64
   image revision 7 and API-36 Google APIs 16 KiB x86_64 image revision 7;
   macOS arm64 CMake `3.31.6` and both arm64 image revisions were recorded on
-  2026-08-23;
-- full local inspection of the pinned 1.5B GGUF facts and chat-template bytes;
-- a passing one-model catalog-v2 fixture containing the independently extracted
-  0.5B template size/hash above;
-- per-model RAM thresholds and policy profile v1 boundary vectors;
-- quarantine retention limits and user-visible recovery policy; and
-- passing golden fixtures plus an independent GPT-5.6 Sol review.
+  2026-08-23.
 
 These items may refine open values but may not weaken the frozen ownership,
 lifetime, publication, path-safety, or versioning rules.

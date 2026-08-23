@@ -1,0 +1,132 @@
+{
+  "fixtureSet": "expansion-gate-0/fixture-set-v1",
+  "family": "installation",
+  "cases": [
+    {
+      "id": "installation/active-absent-valid-rollback",
+      "accepted": true,
+      "coverage": ["active-rollback-matrix"],
+      "input": {"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "active": null, "staging": [], "rollbacks": [{"publicationId": "0123456789abcdef0123456789abcdef", "manifestFile": "bytes/installation-manifest-0.5b-v2.json", "commitFile": "bytes/installation-commit-0.5b-v1.json", "modelIdentity": "catalog-match", "protection": "valid"}], "persistedTransfer": null},
+      "expected": {"repair": "restore-rollback", "installState": "committed", "publicationId": "0123456789abcdef0123456789abcdef"}
+    },
+    {
+      "id": "installation/active-invalid-no-rollback",
+      "accepted": false,
+      "coverage": ["invalid-active-no-rollback", "quarantine-on-recovery"],
+      "input": {"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "active": {"manifestFile": "bytes/installation-manifest-0.5b-v2.json", "commitFile": "bytes/installation-commit-0.5b-v1.json", "modelIdentity": "hash-mismatch", "protection": "valid"}, "staging": [], "rollbacks": [], "persistedTransfer": null},
+      "expected": {"repair": "quarantine-active", "installState": "invalid", "loadPath": null}
+    },
+    {
+      "id": "installation/active-invalid-valid-rollback",
+      "accepted": true,
+      "coverage": ["invalid-active-valid-rollback", "rollback-restoration"],
+      "input": {"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "active": {"publicationId": "fedcba9876543210fedcba9876543210", "valid": false}, "staging": [], "rollbacks": [{"publicationId": "0123456789abcdef0123456789abcdef", "manifestFile": "bytes/installation-manifest-0.5b-v2.json", "commitFile": "bytes/installation-commit-0.5b-v1.json", "modelIdentity": "catalog-match", "protection": "valid"}], "persistedTransfer": null},
+      "expected": {"repair": "quarantine-active-then-restore-rollback", "installState": "committed", "publicationId": "0123456789abcdef0123456789abcdef"}
+    },
+    {
+      "id": "installation/active-valid-plus-rollback",
+      "accepted": true,
+      "coverage": ["active-rollback-matrix"],
+      "input": {"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "active": {"publicationId": "fedcba9876543210fedcba9876543210", "valid": true}, "staging": [], "rollbacks": [{"publicationId": "0123456789abcdef0123456789abcdef", "valid": true}], "persistedTransfer": null},
+      "expected": {"repair": "keep-active-retire-rollback-after-revalidation", "installState": "committed", "publicationId": "fedcba9876543210fedcba9876543210"}
+    },
+    {
+      "id": "installation/adopt-record-with-migration-intent",
+      "accepted": true,
+      "coverage": ["adoptable-migration-record", "record-adoption-authority"],
+      "input": {"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "active": {"manifestFile": "bytes/installation-manifest-0.5b-v2.json", "commitFile": null, "modelSha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db", "backupExcluded": true}, "migrationJournal": {"phase": "recordWritten", "sourceManifestSha256": "89b816e17e146d0d6130fb29a26db3f4f6aa3368524d49358266215dc305aa10", "targetPublicationId": "0123456789abcdef0123456789abcdef", "targetManifestSha256": "b294b75bc571e5309b49224fa88c26469717887e819a6998f72cc7fa8742e903"}},
+      "expected": {"repair": "reinspect-and-write-matching-marker", "installState": "committed", "publicationId": "0123456789abcdef0123456789abcdef"}
+    },
+    {
+      "id": "installation/complete-staging-authorized",
+      "accepted": true,
+      "coverage": ["complete-staging", "publication-order"],
+      "input": {"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "active": null, "staging": [{"operationId": "11111111111111111111111111111111", "manifestFile": "bytes/installation-manifest-0.5b-v2.json", "commitFile": "bytes/installation-commit-0.5b-v1.json", "modelIdentity": "catalog-match", "protection": "valid"}], "rollbacks": [], "persistedTransfer": {"operationId": "11111111111111111111111111111111", "state": "awaitingPublication"}},
+      "expected": {"repair": "promote-authorized-staging", "installState": "committed", "publicationId": "0123456789abcdef0123456789abcdef"}
+    },
+    {
+      "id": "installation/complete-staging-unauthorized",
+      "accepted": false,
+      "coverage": ["unauthorized-staging"],
+      "input": {"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "active": null, "staging": [{"operationId": "11111111111111111111111111111111", "manifestFile": "bytes/installation-manifest-0.5b-v2.json", "commitFile": "bytes/installation-commit-0.5b-v1.json", "modelIdentity": "catalog-match", "protection": "valid"}], "rollbacks": [], "persistedTransfer": null},
+      "expected": {"repair": "quarantine-staging", "installState": "invalid", "loadPath": null}
+    },
+    {
+      "id": "installation/incomplete-staging-never-loadable",
+      "accepted": false,
+      "coverage": ["incomplete-staging"],
+      "input": {"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "active": null, "staging": [{"operationId": "11111111111111111111111111111111", "modelClosed": false, "manifestPresent": false, "commitPresent": false}], "rollbacks": [], "persistedTransfer": {"operationId": "11111111111111111111111111111111", "state": "downloading"}},
+      "expected": {"repair": "resume-or-quarantine-partial", "loadable": false, "promote": false}
+    },
+    {
+      "id": "installation/invalid-only-rollback",
+      "accepted": false,
+      "coverage": ["invalid-only-rollback", "quarantine-on-recovery"],
+      "input": {"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "active": null, "staging": [], "rollbacks": [{"publicationId": "0123456789abcdef0123456789abcdef", "valid": false}], "persistedTransfer": null},
+      "expected": {"repair": "quarantine-rollback", "installState": "invalid", "loadPath": null}
+    },
+    {
+      "id": "installation/multiple-rollbacks-ambiguous",
+      "accepted": false,
+      "coverage": ["multiple-rollback"],
+      "input": {"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "active": null, "staging": [], "rollbacks": [{"publicationId": "0123456789abcdef0123456789abcdef", "valid": true}, {"publicationId": "fedcba9876543210fedcba9876543210", "valid": true}], "persistedTransfer": null},
+      "expected": {"repair": "fail-closed", "errorCode": "STORAGE_IO", "managerReady": false}
+    },
+    {
+      "id": "installation/multiple-staging-ambiguous",
+      "accepted": false,
+      "coverage": ["multiple-staging", "quarantine-on-recovery"],
+      "input": {"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "active": null, "staging": [{"operationId": "11111111111111111111111111111111", "valid": true, "complete": true}, {"operationId": "22222222222222222222222222222222", "valid": true, "complete": true}], "rollbacks": [], "persistedTransfer": {"operationId": "33333333333333333333333333333333", "state": "awaitingPublication"}},
+      "expected": {"repair": "quarantine-ambiguous-staging", "installState": "invalid", "promotedOperationId": null}
+    },
+    {
+      "id": "installation/post-promotion-protection-drift",
+      "accepted": false,
+      "coverage": ["backup-exclusion", "post-promotion-drift"],
+      "input": {"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "active": {"publicationId": "fedcba9876543210fedcba9876543210", "valid": true, "protection": "backup-exclusion-drift"}, "staging": [], "rollbacks": [{"publicationId": "0123456789abcdef0123456789abcdef", "valid": true, "protection": "valid"}], "persistedTransfer": {"operationId": "11111111111111111111111111111111", "state": "publishing"}},
+      "expected": {"repair": "quarantine-candidate-then-restore-rollback", "errorCode": "BACKUP_EXCLUSION_FAILED", "publicationId": "0123456789abcdef0123456789abcdef"}
+    },
+    {
+      "id": "installation/precommit-protection-failure",
+      "accepted": false,
+      "coverage": ["precommit-protection"],
+      "input": {"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "operationId": "11111111111111111111111111111111", "staging": {"modelClosed": true, "hashMatches": true, "inspectionMatches": true, "modelFsynced": true, "permissionsVerified": true, "backupExclusionVerified": false, "manifestPresent": false, "commitPresent": false}},
+      "expected": {"result": "BACKUP_EXCLUSION_FAILED", "markerWritten": false, "publicationAttempted": false, "loadable": false}
+    },
+    {
+      "id": "installation/record-validation-matrix",
+      "accepted": false,
+      "coverage": ["record-validation"],
+      "input": {"baseManifestFile": "bytes/installation-manifest-0.5b-v2.json", "baseCommitFile": "bytes/installation-commit-0.5b-v1.json", "variants": [{"primaryViolation": "unknown-selected-field", "field": "selected", "value": true}, {"primaryViolation": "artifact-digest", "artifactSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}, {"primaryViolation": "relative-path", "appDirectoryName": "wrong-directory"}, {"primaryViolation": "publication", "markerPublicationId": "fedcba9876543210fedcba9876543210"}, {"primaryViolation": "manifest-digest", "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}, {"primaryViolation": "invalid-time", "installedAt": "2026-08-23T12:34:56.1Z"}, {"primaryViolation": "backup-exclusion", "backupExcluded": false}]},
+      "expected": {"allRejected": true, "loadable": false, "unknownNewerRecordDeleted": false}
+    },
+    {
+      "id": "installation/record-without-marker-ordinary-load",
+      "accepted": false,
+      "coverage": ["record-without-marker"],
+      "input": {"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "active": {"manifestFile": "bytes/installation-manifest-0.5b-v2.json", "commitFile": null, "modelIdentity": "catalog-match", "protection": "valid"}, "migrationJournal": null, "persistedTransfer": null},
+      "expected": {"repair": "quarantine-stray-record", "installState": "invalid", "loadable": false}
+    },
+    {
+      "id": "installation/schema1-pair-migrates",
+      "accepted": true,
+      "coverage": ["schema1-migration"],
+      "input": {"schema1Pair": {"manifestFile": "bytes/migration-source-manifest-v1.json", "manifestSha256": "89b816e17e146d0d6130fb29a26db3f4f6aa3368524d49358266215dc305aa10", "modelByteSize": 491400032, "modelSha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db"}, "nextPreferenceRevision": "1", "targetPublicationId": "0123456789abcdef0123456789abcdef"},
+      "expected": {"repair": "write-journal-record-marker-preference-counter", "movesModelBytes": false, "origin": "migrated"}
+    },
+    {
+      "id": "installation/valid-v2-0.5b",
+      "accepted": true,
+      "coverage": ["marker-agreement", "valid-v2-0.5b"],
+      "input": {"manifestFile": "bytes/installation-manifest-0.5b-v2.json", "commitFile": "bytes/installation-commit-0.5b-v1.json", "model": {"byteSize": 491400032, "sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db", "regularFile": true}, "protection": {"backupExcluded": true, "permissions": "verified"}},
+      "expected": {"result": "loadable", "publicationId": "0123456789abcdef0123456789abcdef"}
+    },
+    {
+      "id": "installation/valid-v2-1.5b",
+      "accepted": true,
+      "coverage": ["valid-v2-1.5b"],
+      "input": {"manifestFile": "bytes/installation-manifest-1.5b-v2.json", "commitFile": "bytes/installation-commit-1.5b-v1.json", "model": {"byteSize": 1117320736, "sha256": "6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e", "regularFile": true}, "protection": {"backupExcluded": true, "permissions": "verified"}},
+      "expected": {"result": "loadable", "publicationId": "fedcba9876543210fedcba9876543210"}
+    }
+  ]
+}

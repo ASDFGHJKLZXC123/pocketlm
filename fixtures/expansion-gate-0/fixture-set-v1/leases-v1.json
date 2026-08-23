@@ -1,0 +1,97 @@
+{
+  "fixtureSet": "expansion-gate-0/fixture-set-v1",
+  "family": "leases",
+  "cases": [
+    {
+      "id": "leases/blocked-publish-and-delete",
+      "accepted": true,
+      "coverage": ["blocked-writer"],
+      "input": {"leaseKey": {"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "publicationId": "0123456789abcdef0123456789abcdef", "canonicalFileIdentity": {"deviceId": "fixture-device-1", "fileId": "fixture-file-100", "byteSize": 491400032}}, "readers": [{"sessionId": 7, "phase": "loaded"}, {"sessionId": 9, "phase": "pending-load"}], "writers": ["publish", "delete"]},
+      "expected": {"errorCode": "MODEL_IN_USE", "blockingSessionIds": [7, 9], "writerCallsUnloadWhileExclusive": false}
+    },
+    {
+      "id": "leases/destroy-before-release",
+      "accepted": true,
+      "coverage": ["destroy-before-release", "lock-order"],
+      "input": {"events": ["admit-unload", "join-generation", "destroy-native-session", "release-read-lease"], "repositoryCallbackDuringDestroy": false},
+      "expected": {"result": "accepted", "releaseBeforeDestroy": false, "lockOrder": ["repository-coordinator", "per-model-lease", "bridge-lifecycle-admission"]}
+    },
+    {
+      "id": "leases/failed-load-releases-pending",
+      "accepted": true,
+      "coverage": ["failed-load"],
+      "input": {"sessionId": 11, "events": ["acquire-pending-read", "validate-path", "native-load-fails"]},
+      "expected": {"pendingReadRetained": false, "sessionEnumerated": false, "writerMayProceed": true}
+    },
+    {
+      "id": "leases/failed-unload-retains-read",
+      "accepted": true,
+      "coverage": ["failed-unload"],
+      "input": {"sessionId": 12, "events": ["loaded-read-held", "unload-request", "native-destroy-fails"]},
+      "expected": {"readLeaseRetained": true, "sessionEnumerated": true, "errorCode": "UNLOAD_FAILED"}
+    },
+    {
+      "id": "leases/js-reload-orphan-unload",
+      "accepted": true,
+      "coverage": ["js-reload"],
+      "input": {"nativeSessionsSurvive": [21, 22], "jsActiveFingerprintAfterReload": null, "snapshotSessionIds": [21, 22], "reattachedSessionIds": []},
+      "expected": {"beforeManagerMutators": ["unloadModel:21", "unloadModel:22", "refresh-snapshot"], "inferActiveFromPreference": false}
+    },
+    {
+      "id": "leases/multiple-readers-fair-writer",
+      "accepted": true,
+      "coverage": ["fairness"],
+      "input": {"events": ["reader:1-acquire", "reader:2-acquire", "writer:publish-queue", "reader:3-request", "reader:1-release", "reader:2-release", "writer:publish-acquire", "writer:publish-release", "reader:3-acquire"]},
+      "expected": {"writerStarved": false, "reader3OvertakesWriter": false, "maximumConcurrentReaders": 2}
+    },
+    {
+      "id": "leases/old-fingerprint-recovery",
+      "accepted": true,
+      "coverage": ["old-fingerprint-recovery"],
+      "input": {"old": {"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "publicationId": "0123456789abcdef0123456789abcdef", "fingerprint": "9045afb4538b981664b35371a4d2054fd5408409199f448ede2c31a2a61f5177"}, "desired": {"modelId": "qwen2.5-1.5b-instruct-q4-k-m", "publicationId": "fedcba9876543210fedcba9876543210"}, "desiredLoadResult": "failed", "oldReloadResult": "success"},
+      "expected": {"preferenceModelId": "qwen2.5-0.5b-instruct-q4-k-m", "activeFingerprint": "9045afb4538b981664b35371a4d2054fd5408409199f448ede2c31a2a61f5177"}
+    },
+    {
+      "id": "leases/only-install-delete-failure",
+      "accepted": true,
+      "coverage": ["only-install-delete"],
+      "input": {"onlyInstallation": "qwen2.5-0.5b-instruct-q4-k-m", "unloadResult": "success", "clearPreferenceResult": "success", "deleteResult": "STORAGE_IO"},
+      "expected": {"installationRemainsValid": true, "selectedPreference": null, "activeFingerprint": null, "errorCode": "STORAGE_IO"}
+    },
+    {
+      "id": "leases/only-install-preference-clear-failure",
+      "accepted": true,
+      "coverage": ["only-install-delete"],
+      "input": {"onlyInstallation": "qwen2.5-0.5b-instruct-q4-k-m", "unloadResult": "success", "clearPreferenceResult": "STORAGE_IO"},
+      "expected": {"deleteAttempted": false, "preferenceUnchanged": true, "installationRemainsValid": true}
+    },
+    {
+      "id": "leases/pending-gate-binds-file-identity",
+      "accepted": true,
+      "coverage": ["pending-identity-binding"],
+      "input": {"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "publicationId": "0123456789abcdef0123456789abcdef", "events": ["acquire-per-model-pending-admission", "no-follow-open", "fstat-canonical-identity", "validate-record-marker-and-catalog", "atomically-promote-to-bound-read-lease"], "canonicalFileIdentity": {"deviceId": "fixture-device-1", "fileId": "fixture-file-100", "byteSize": 491400032}},
+      "expected": {"writerExclusionGap": false, "identityGuessedBeforeOpen": false, "boundLeaseKeyIncludesFileIdentity": true, "failedValidationReleasesPendingAdmission": true}
+    },
+    {
+      "id": "leases/preference-write-failure-after-desired-load",
+      "accepted": true,
+      "coverage": ["preference-write-failure"],
+      "input": {"oldSessionId": 31, "desiredSessionId": 32, "desiredLoadResult": "success-staged", "preferenceWriteResult": "STORAGE_IO", "stagedUnloadResult": "success", "oldReloadResult": "success"},
+      "expected": {"publishDesiredActive": false, "desiredInferenceAdmitted": false, "restoredOldActive": true}
+    },
+    {
+      "id": "leases/separate-model-file-concurrency",
+      "accepted": true,
+      "coverage": ["separate-model-concurrency"],
+      "input": {"operations": [{"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "kind": "download"}, {"modelId": "qwen2.5-1.5b-instruct-q4-k-m", "kind": "inspect"}], "residentInferenceSessions": 1},
+      "expected": {"fileWorkMayOverlap": true, "sameModelCommandsSerialize": true, "multipleResidentInferenceAllowed": false}
+    },
+    {
+      "id": "leases/staged-desired-unload-failure",
+      "accepted": true,
+      "coverage": ["staged-unload-failure"],
+      "input": {"desiredSessionId": 41, "desiredState": "loaded-staged-not-active", "preferenceWriteResult": "STORAGE_IO", "stagedUnloadResult": "UNLOAD_FAILED"},
+      "expected": {"leaseRetained": true, "sessionEnumerated": true, "processGlobalFaultBlocker": "UNLOAD_FAILED", "inferenceAndMutationRejected": true}
+    }
+  ]
+}

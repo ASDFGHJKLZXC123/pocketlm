@@ -1,0 +1,132 @@
+{
+  "fixtureSet": "expansion-gate-0/fixture-set-v1",
+  "family": "manager",
+  "cases": [
+    {
+      "id": "manager/argument-validation-no-receipt",
+      "accepted": false,
+      "coverage": ["argument-validation"],
+      "input": {"variants": [{"field": "commandId", "value": "00000000000000000000000000000000"}, {"field": "operationId", "value": "ABCDEF0123456789ABCDEF0123456789"}, {"field": "expectedRevision", "value": "01"}, {"field": "modelId", "value": "../model"}, {"field": "origin", "value": "fallback", "publicCall": true}]},
+      "expected": {"allRejectWith": "INVALID_ARGUMENT", "receiptCreated": false, "managerRevisionChanged": false}
+    },
+    {
+      "id": "manager/command-id-global-collision",
+      "accepted": false,
+      "coverage": ["command-id-global"],
+      "input": {"retainedReceipt": {"commandId": "22222222222222222222222222222222", "method": "startInstall", "modelId": "qwen2.5-0.5b-instruct-q4-k-m", "argumentDigest": "5a6eedf062da7828ccf754fbd17eaf179b2c2d4a78a709f83323c3800276315d", "phase": "terminal", "terminalSuccess": true}, "replay": {"commandId": "22222222222222222222222222222222", "method": "deleteInstallation", "modelId": "qwen2.5-1.5b-instruct-q4-k-m", "argumentDigest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}},
+      "expected": {"result": "rejected", "errorCode": "INVALID_STATE", "newReceipt": false}
+    },
+    {
+      "id": "manager/crash-recovery-all-mutators",
+      "accepted": true,
+      "coverage": ["crash-recovery"],
+      "input": {"methods": ["startInstall", "pauseInstall", "resumeInstall", "cancelInstall", "deleteInstallation", "setSelectedPreference"], "crashPhases": ["prepared", "effectCommitted", "terminal"], "startupEvidence": "matching-durable-filesystem-and-platform-operation"},
+      "expected": {"beforeReadiness": "reconcile-every-nonterminal-receipt", "duplicateOperationIds": false, "terminalReceiptWritten": true}
+    },
+    {
+      "id": "manager/delete-plan-matrix",
+      "accepted": true,
+      "coverage": ["delete-plan-matrix"],
+      "input": {"plans": [{"targetKind": "committed", "targetPublicationId": "fedcba9876543210fedcba9876543210", "targetQuarantineId": null, "selected": true, "fallbackAvailable": true, "selectionReleasePlan": {"kind": "fallback", "modelId": "qwen2.5-0.5b-instruct-q4-k-m", "publicationId": "0123456789abcdef0123456789abcdef"}, "preferenceMutation": "write-frozen-fallback"}, {"targetKind": "committed", "targetPublicationId": "fedcba9876543210fedcba9876543210", "targetQuarantineId": null, "selected": true, "fallbackAvailable": false, "selectionReleasePlan": {"kind": "clear"}, "preferenceMutation": "clear"}, {"targetKind": "committed", "targetPublicationId": "fedcba9876543210fedcba9876543210", "targetQuarantineId": null, "selected": false, "fallbackAvailable": true, "selectionReleasePlan": {"kind": "none"}, "preferenceMutation": null}, {"targetKind": "quarantine", "targetPublicationId": null, "targetQuarantineId": "22222222222222222222222222222222", "selected": false, "selectionReleasePlan": {"kind": "none"}, "preferenceMutation": null}]},
+      "expected": {"acceptedDeleteHasExactlyOneTargetIdentity": true, "committedTargetsVerifiedUnselectedAndUnleasedBeforeTombstone": true, "quarantineReplayCannotDeleteDifferentId": true, "nonePlanNeverTouchesPreference": true}
+    },
+    {
+      "id": "manager/direct-terminal-rejection",
+      "accepted": true,
+      "coverage": ["direct-rejection"],
+      "input": {"schemaVersion": 1, "commandId": "22222222222222222222222222222222", "method": "deleteInstallation", "modelId": "qwen2.5-0.5b-instruct-q4-k-m", "argumentDigest": "42c88d87512c0a6a56c3fe3e1d37f93d0ea4609d3b376c18cc30ec3e09b6a9f8", "expectedRevision": "8", "targetOperationId": null, "createdOperationId": null, "targetPublicationId": null, "targetQuarantineId": null, "selectionReleasePlan": null, "preferenceMutation": null, "phase": "terminal", "effectStep": null, "preparedManagerRevision": "10", "effectManagerRevision": null, "terminalManagerRevision": "10", "terminalSuccess": false, "terminalErrorCode": "STALE_REVISION"},
+      "expected": {"result": "accepted-receipt", "durablyReplayError": "STALE_REVISION", "managerRevision": "10"}
+    },
+    {
+      "id": "manager/durable-transfer-invariants",
+      "accepted": true,
+      "coverage": ["durable-transfer"],
+      "input": {"schemaVersion": 1, "modelId": "qwen2.5-0.5b-instruct-q4-k-m", "operationId": "11111111111111111111111111111111", "artifactSha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db", "sourceRevision": "9217f5db79a29953eb74d5343926648285ec7e67", "sourceFilename": "qwen2.5-0.5b-instruct-q4_k_m.gguf", "expectedBytes": 491400032, "state": "downloading", "bytesReceived": 1048576, "durablePartialBytes": 1048576, "hasResumeData": false, "error": null, "warnings": []},
+      "expected": {"result": "accepted", "onePerModel": true, "catalogOrder": true, "sourceIdentityFrozen": true, "opaquePlatformStatePresent": false}
+    },
+    {
+      "id": "manager/invalid-snapshot-combination",
+      "accepted": false,
+      "coverage": ["snapshot-invalid-combination"],
+      "input": {"catalogFile": "bytes/catalog-v2-one-model.json", "platform": "ios", "snapshot": {"schemaVersion": 1, "revision": "7", "catalogDigest": "6f8084cbb94bc5ba626cd298b33e7ba9f3fe3cad3e69a44fb674d17b207c7d8f", "selectedPreference": null, "repairComplete": true, "models": [{"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "installState": "missing", "publicationId": "0123456789abcdef0123456789abcdef", "transfer": {"state": "idle", "operationId": "11111111111111111111111111111111", "expectedBytes": 491400032, "bytesReceived": 1, "durablePartialBytes": 1, "hasResumeData": true, "canPause": true, "canResume": true, "error": {"code": "NETWORK", "message": "invalid combination"}, "warnings": []}, "blockers": {"sessionIds": [2, 1, 1], "mutationPending": true}}]}},
+      "expected": {"result": "malformed", "consumerAction": "safe-policy-fallback", "partialInterpretation": false}
+    },
+    {
+      "id": "manager/manager-state-size-and-closed-schema",
+      "accepted": true,
+      "coverage": ["closed-manager-state"],
+      "input": {"catalogFile": "bytes/catalog-v2-two-models.json", "validBytesFile": "bytes/manager-state-empty-v1.json", "maxBytes": 4194304, "rejectAtBytes": 4194305, "unknownFieldDocument": {"schemaVersion": 1, "revision": "0", "preferenceRevisionCounter": "0", "catalogDigest": "d14beedc253569bab98aa570ec6c0b79d2bdf1040caf68cda49c26d0f97ae027", "transfers": [], "commandReceipts": [], "quarantines": [], "nativeResumeBlob": "forbidden"}},
+      "expected": {"validFile": "accepted", "oversize": "STORAGE_IO", "unknownField": "rejected", "platformOpaqueDataShared": false}
+    },
+    {
+      "id": "manager/preference-must-name-committed-model",
+      "accepted": false,
+      "coverage": ["selected-preference-target"],
+      "input": {"selectedPreference": {"schemaVersion": 1, "revision": "1", "modelId": "qwen2.5-1.5b-instruct-q4-k-m", "origin": "manual", "updatedAt": "2026-08-23T12:34:56Z"}, "models": [{"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "installState": "committed", "publicationId": "0123456789abcdef0123456789abcdef"}, {"modelId": "qwen2.5-1.5b-instruct-q4-k-m", "installState": "missing", "publicationId": null}]},
+      "expected": {"result": "malformed", "consumerAction": "safe-policy-fallback", "partialInterpretation": false}
+    },
+    {
+      "id": "manager/receipt-eviction-global",
+      "accepted": true,
+      "coverage": ["receipt-eviction"],
+      "input": {"completedReceiptCount": 257, "terminalManagerRevisions": {"first": "1000", "last": "1256", "strictlyIncreasing": true}, "nonterminalReceipts": [{"commandId": "33333333333333333333333333333333", "phase": "prepared"}]},
+      "expected": {"retainedCompletedCount": 256, "evictedTerminalManagerRevision": "1000", "nonterminalRetained": true}
+    },
+    {
+      "id": "manager/receipt-phase-ordering",
+      "accepted": true,
+      "coverage": ["receipt-phase-ordering"],
+      "input": {"receipts": [{"phase": "prepared", "effectStep": null, "preparedManagerRevision": "20", "effectManagerRevision": null, "terminalManagerRevision": null, "terminalSuccess": null, "terminalErrorCode": null}, {"phase": "effectCommitted", "effectStep": "preferenceWritten", "preparedManagerRevision": "20", "effectManagerRevision": "21", "terminalManagerRevision": null, "terminalSuccess": null, "terminalErrorCode": null}, {"phase": "terminal", "effectStep": "preferenceWritten", "preparedManagerRevision": "20", "effectManagerRevision": "21", "terminalManagerRevision": "22", "terminalSuccess": true, "terminalErrorCode": null}]},
+      "expected": {"result": "accepted", "strictRevisionOrder": true, "phaseNullability": true}
+    },
+    {
+      "id": "manager/replay-before-current-revision-check",
+      "accepted": true,
+      "coverage": ["receipt-replay-order"],
+      "input": {"retainedTerminalReceipt": {"commandId": "22222222222222222222222222222222", "argumentDigest": "339ff663f43cde365305bbb12b70d176bea8287ad6028c58cd72e616893b589c", "expectedRevision": "10", "terminalSuccess": true, "terminalManagerRevision": "13"}, "replay": {"sameCommandId": true, "sameArgumentDigest": true}, "currentManagerRevision": "999"},
+      "expected": {"result": "replay-stored-success", "currentRevisionChecked": false, "newReceiptCreated": false}
+    },
+    {
+      "id": "manager/snapshot-android-downloading",
+      "accepted": true,
+      "coverage": ["android-partial", "snapshot-valid"],
+      "input": {"catalogFile": "bytes/catalog-v2-one-model.json", "platform": "android", "snapshot": {"schemaVersion": 1, "revision": "8", "catalogDigest": "6f8084cbb94bc5ba626cd298b33e7ba9f3fe3cad3e69a44fb674d17b207c7d8f", "selectedPreference": null, "repairComplete": true, "models": [{"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "installState": "missing", "publicationId": null, "transfer": {"state": "downloading", "operationId": "11111111111111111111111111111111", "expectedBytes": 491400032, "bytesReceived": 1048576, "durablePartialBytes": 1048576, "hasResumeData": false, "canPause": true, "canResume": false, "error": null, "warnings": [{"code": "NOTIFICATION_DENIED", "message": "Progress notification permission was denied."}]}, "blockers": {"sessionIds": [], "mutationPending": false}}]}},
+      "expected": {"result": "accepted", "durablePartialBytes": 1048576, "warningIsFatal": false}
+    },
+    {
+      "id": "manager/snapshot-ios-paused-without-resume-data",
+      "accepted": true,
+      "coverage": ["ios-resume", "snapshot-valid"],
+      "input": {"catalogFile": "bytes/catalog-v2-one-model.json", "platform": "ios", "snapshot": {"schemaVersion": 1, "revision": "9", "catalogDigest": "6f8084cbb94bc5ba626cd298b33e7ba9f3fe3cad3e69a44fb674d17b207c7d8f", "selectedPreference": null, "repairComplete": true, "models": [{"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "installState": "missing", "publicationId": null, "transfer": {"state": "paused", "operationId": "11111111111111111111111111111111", "expectedBytes": 491400032, "bytesReceived": 1048576, "durablePartialBytes": null, "hasResumeData": false, "canPause": false, "canResume": true, "error": null, "warnings": []}, "blockers": {"sessionIds": [], "mutationPending": false}}]}},
+      "expected": {"result": "accepted", "resumeAction": "restart-original-pinned-url", "operationIdPreserved": true}
+    },
+    {
+      "id": "manager/snapshot-state-and-code-matrix",
+      "accepted": true,
+      "coverage": ["snapshot-enum-exhaustive"],
+      "input": {"installStateRules": [{"state": "missing", "publicationId": null}, {"state": "committed", "publicationId": "nonzero-32hex"}, {"state": "invalid", "publicationId": null}, {"state": "repairing", "publicationId": null, "requiresRepairComplete": false}, {"state": "deleting", "publicationId": null, "requiresMutationPending": true}], "transferStateRules": [{"state": "idle", "operationId": null, "bytesReceived": null, "error": null, "canPause": false, "canResume": false}, {"state": "queued", "operationId": "nonzero-32hex", "error": null, "canPause": true, "canResume": false}, {"state": "downloading", "operationId": "nonzero-32hex", "error": null, "canPause": true, "canResume": false}, {"state": "pausing", "operationId": "nonzero-32hex", "error": null, "canPause": false, "canResume": false}, {"state": "paused", "operationId": "nonzero-32hex", "error": null, "canPause": false, "canResume": true}, {"state": "verifying", "operationId": "nonzero-32hex", "bytesReceived": "expectedBytes", "error": null, "canPause": false, "canResume": false}, {"state": "awaitingPublication", "operationId": "nonzero-32hex", "bytesReceived": "expectedBytes", "error": null, "mutationPending": true}, {"state": "publishing", "operationId": "nonzero-32hex", "bytesReceived": "expectedBytes", "error": null, "mutationPending": true}, {"state": "cancelling", "operationId": "nonzero-32hex", "error": null, "canPause": false, "canResume": false}, {"state": "failed", "operationId": "nonzero-32hex", "error": "nonnull", "canPause": false, "canResume": false}], "errorCodes": ["CATALOG_UNSUPPORTED", "MODEL_UNKNOWN", "INVALID_ARGUMENT", "INVALID_STATE", "STALE_REVISION", "INSUFFICIENT_SPACE", "NETWORK", "HTTP_STATUS", "RESUME_INVALID", "VALIDATOR_CHANGED", "RANGE_INVALID", "BACKGROUND_RESTRICTED", "BACKGROUND_TIMEOUT", "HASH_MISMATCH", "GGUF_INVALID", "GGUF_BOUNDS", "METADATA_MISMATCH", "CATALOG_DRIFT", "PATH_REJECTED", "MODEL_IN_USE", "UNLOAD_FAILED", "STORAGE_IO", "BACKUP_EXCLUSION_FAILED", "CANCELLED_BY_SYSTEM", "INTERNAL"], "warningCodes": ["NOTIFICATION_DENIED"]},
+      "expected": {"enumOrderStable": true, "everyTransferStateHasInvariantRecipe": true, "failedIffError": true, "idleIffOperationIdNull": true, "warningAndroidOnlyAndNonfatal": true}
+    },
+    {
+      "id": "manager/snapshot-valid-idle",
+      "accepted": true,
+      "coverage": ["snapshot-valid"],
+      "input": {"catalogFile": "bytes/catalog-v2-two-models.json", "platform": "ios", "snapshot": {"schemaVersion": 1, "revision": "1", "catalogDigest": "d14beedc253569bab98aa570ec6c0b79d2bdf1040caf68cda49c26d0f97ae027", "selectedPreference": {"schemaVersion": 1, "revision": "1", "modelId": "qwen2.5-0.5b-instruct-q4-k-m", "origin": "manual", "updatedAt": "2026-08-23T12:34:56Z"}, "repairComplete": true, "models": [{"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "installState": "committed", "publicationId": "0123456789abcdef0123456789abcdef", "transfer": {"state": "idle", "operationId": null, "expectedBytes": 491400032, "bytesReceived": null, "durablePartialBytes": null, "hasResumeData": false, "canPause": false, "canResume": false, "error": null, "warnings": []}, "blockers": {"sessionIds": [], "mutationPending": false}}, {"modelId": "qwen2.5-1.5b-instruct-q4-k-m", "installState": "missing", "publicationId": null, "transfer": {"state": "idle", "operationId": null, "expectedBytes": 1117320736, "bytesReceived": null, "durablePartialBytes": null, "hasResumeData": false, "canPause": false, "canResume": false, "error": null, "warnings": []}, "blockers": {"sessionIds": [], "mutationPending": false}}]}},
+      "expected": {"result": "accepted", "catalogOrderPreserved": true}
+    },
+    {
+      "id": "manager/start-handoff-terminal-timing",
+      "accepted": true,
+      "coverage": ["start-handoff-timing"],
+      "input": {"receipt": {"schemaVersion": 1, "commandId": "22222222222222222222222222222222", "method": "startInstall", "modelId": "qwen2.5-0.5b-instruct-q4-k-m", "argumentDigest": "339ff663f43cde365305bbb12b70d176bea8287ad6028c58cd72e616893b589c", "expectedRevision": "10", "targetOperationId": null, "createdOperationId": "11111111111111111111111111111111", "targetPublicationId": null, "targetQuarantineId": null, "selectionReleasePlan": null, "preferenceMutation": null, "phase": "terminal", "effectStep": "platformOperationStarted", "preparedManagerRevision": "11", "effectManagerRevision": "12", "terminalManagerRevision": "13", "terminalSuccess": true, "terminalErrorCode": null}, "transferState": "queued", "publicationComplete": false},
+      "expected": {"promise": "fulfilled", "operationIdDurable": true, "waitsForPublication": false}
+    },
+    {
+      "id": "manager/startup-effect-evidence-matrix",
+      "accepted": true,
+      "coverage": ["startup-effect-recovery"],
+      "input": {"startEvidence": ["matching-staging", "durable-transfer", "enumerated-ios-task", "enumerated-android-service", "no-effect-resume-from-prepared"], "controlMethods": ["pauseInstall", "resumeInstall", "cancelInstall"], "deleteEvidence": ["matching-active-publication", "exact-publication-tombstone", "same-publication-absent", "later-publication-present", "matching-quarantine-id", "exact-quarantine-tombstone", "different-quarantine-id-present"], "preferenceEvidence": ["exact-frozen-bytes-present", "retry-while-publication-precondition-holds", "precondition-drift"]},
+      "expected": {"secondOperationIdCreated": false, "laterPublicationDeleted": false, "laterQuarantineDeleted": false, "tombstoneRecoveryIdempotent": true, "preconditionDrift": "INVALID_STATE"}
+    }
+  ]
+}

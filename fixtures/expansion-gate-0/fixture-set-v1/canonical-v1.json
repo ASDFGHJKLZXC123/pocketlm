@@ -1,0 +1,209 @@
+{
+  "fixtureSet": "expansion-gate-0/fixture-set-v1",
+  "family": "canonical",
+  "cases": [
+    {
+      "id": "canonical/command-cancel-install",
+      "accepted": true,
+      "coverage": ["command-digest"],
+      "input": {"kind": "command_digest", "method": "cancelInstall", "modelId": "qwen2.5-0.5b-instruct-q4-k-m", "operationId": "11111111111111111111111111111111", "expectedRevision": "100000000000000000000000000000000000000"},
+      "expected": {"sha256": "f8c8113e7f515f113a8770091cc19132f9f0130861b4101440050861b66d00c8"}
+    },
+    {
+      "id": "canonical/command-delete-installation",
+      "accepted": true,
+      "coverage": ["command-digest"],
+      "input": {"kind": "command_digest", "method": "deleteInstallation", "modelId": "qwen2.5-0.5b-instruct-q4-k-m", "expectedRevision": "100000000000000000000000000000000000000"},
+      "expected": {"sha256": "b391396a55a95bf57126c9f14b50419ce519bd94c95d063d6b59d10f71af94d5"}
+    },
+    {
+      "id": "canonical/command-pause-install",
+      "accepted": true,
+      "coverage": ["command-digest"],
+      "input": {"kind": "command_digest", "method": "pauseInstall", "modelId": "qwen2.5-0.5b-instruct-q4-k-m", "operationId": "11111111111111111111111111111111", "expectedRevision": "100000000000000000000000000000000000000"},
+      "expected": {"sha256": "58ae358c1f67be1963c2bb2195412485df16ff6cdf1f8806f62b05bf55ce1a04"}
+    },
+    {
+      "id": "canonical/command-resume-install",
+      "accepted": true,
+      "coverage": ["command-digest"],
+      "input": {"kind": "command_digest", "method": "resumeInstall", "modelId": "qwen2.5-0.5b-instruct-q4-k-m", "operationId": "11111111111111111111111111111111", "expectedRevision": "100000000000000000000000000000000000000"},
+      "expected": {"sha256": "912ce7671ca1bd212a014d69680da299ad11695e83be4cab73a17356d1935197"}
+    },
+    {
+      "id": "canonical/command-set-selected-preference",
+      "accepted": true,
+      "coverage": ["command-digest"],
+      "input": {"kind": "command_digest", "method": "setSelectedPreference", "modelId": "qwen2.5-0.5b-instruct-q4-k-m", "origin": "manual", "expectedRevision": "100000000000000000000000000000000000000"},
+      "expected": {"sha256": "d07c6d2d95a88e1fe4890a06b8e9b9904df9d05c8b11de82df97fbbafebffd5e"}
+    },
+    {
+      "id": "canonical/command-start-install",
+      "accepted": true,
+      "coverage": ["command-digest"],
+      "input": {"kind": "command_digest", "method": "startInstall", "modelId": "qwen2.5-0.5b-instruct-q4-k-m", "expectedRevision": "100000000000000000000000000000000000000"},
+      "expected": {"sha256": "5a6eedf062da7828ccf754fbd17eaf179b2c2d4a78a709f83323c3800276315d"}
+    },
+    {
+      "id": "canonical/decimal-invalid-leading-zero",
+      "accepted": false,
+      "coverage": ["decimal-revision"],
+      "input": {"kind": "decimal_revision", "value": "01"},
+      "expected": {"canonical": false}
+    },
+    {
+      "id": "canonical/decimal-valid-arbitrary-precision",
+      "accepted": true,
+      "coverage": ["decimal-revision"],
+      "input": {"kind": "decimal_revision", "value": "100000000000000000000000000000000000000"},
+      "expected": {"canonical": true}
+    },
+    {
+      "id": "canonical/digest-invalid-uppercase",
+      "accepted": false,
+      "coverage": ["lowercase-digest"],
+      "input": {"kind": "lowercase_digest", "value": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"},
+      "expected": {"canonical": false}
+    },
+    {
+      "id": "canonical/digest-valid",
+      "accepted": true,
+      "coverage": ["lowercase-digest"],
+      "input": {"kind": "lowercase_digest", "value": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db"},
+      "expected": {"canonical": true}
+    },
+    {
+      "id": "canonical/id-invalid-all-zero",
+      "accepted": false,
+      "coverage": ["lowercase-id"],
+      "input": {"kind": "lowercase_id", "value": "00000000000000000000000000000000"},
+      "expected": {"canonical": false}
+    },
+    {
+      "id": "canonical/id-valid",
+      "accepted": true,
+      "coverage": ["lowercase-id"],
+      "input": {"kind": "lowercase_id", "value": "0123456789abcdef0123456789abcdef"},
+      "expected": {"canonical": true}
+    },
+    {
+      "id": "canonical/raw-catalog-one",
+      "accepted": true,
+      "coverage": ["raw-byte-digest"],
+      "input": {"kind": "raw_bytes_digest", "path": "bytes/catalog-v2-one-model.json"},
+      "expected": {"byteSize": 1531, "sha256": "6f8084cbb94bc5ba626cd298b33e7ba9f3fe3cad3e69a44fb674d17b207c7d8f"}
+    },
+    {
+      "id": "canonical/raw-catalog-two",
+      "accepted": true,
+      "coverage": ["raw-byte-digest"],
+      "input": {"kind": "raw_bytes_digest", "path": "bytes/catalog-v2-two-models.json"},
+      "expected": {"byteSize": 3032, "sha256": "d14beedc253569bab98aa570ec6c0b79d2bdf1040caf68cda49c26d0f97ae027"}
+    },
+    {
+      "id": "canonical/raw-installation-commit-0.5b",
+      "accepted": true,
+      "coverage": ["raw-byte-digest"],
+      "input": {"kind": "raw_bytes_digest", "path": "bytes/installation-commit-0.5b-v1.json"},
+      "expected": {"byteSize": 262, "sha256": "9ff5d2224cbe02d9e94004691954437760cb5023b909378be4045cd5f5c797c7"}
+    },
+    {
+      "id": "canonical/raw-installation-commit-1.5b",
+      "accepted": true,
+      "coverage": ["raw-byte-digest"],
+      "input": {"kind": "raw_bytes_digest", "path": "bytes/installation-commit-1.5b-v1.json"},
+      "expected": {"byteSize": 263, "sha256": "4421bcf61fcccdaeb03f13b8a9e2f8feba7284816beec69614fe12fd741b749e"}
+    },
+    {
+      "id": "canonical/raw-installation-manifest-0.5b",
+      "accepted": true,
+      "coverage": ["raw-byte-digest"],
+      "input": {"kind": "raw_bytes_digest", "path": "bytes/installation-manifest-0.5b-v2.json"},
+      "expected": {"byteSize": 799, "sha256": "b294b75bc571e5309b49224fa88c26469717887e819a6998f72cc7fa8742e903"}
+    },
+    {
+      "id": "canonical/raw-installation-manifest-1.5b",
+      "accepted": true,
+      "coverage": ["raw-byte-digest"],
+      "input": {"kind": "raw_bytes_digest", "path": "bytes/installation-manifest-1.5b-v2.json"},
+      "expected": {"byteSize": 800, "sha256": "048a3f0f6fb894fc34fe44dd388b4dfcc9c3c1a913f7d5aad61fdd9878da101f"}
+    },
+    {
+      "id": "canonical/raw-manager-state",
+      "accepted": true,
+      "coverage": ["raw-byte-digest"],
+      "input": {"kind": "raw_bytes_digest", "path": "bytes/manager-state-empty-v1.json"},
+      "expected": {"byteSize": 203, "sha256": "d3ea1e7f2d86a423d274023f0c517a12fa91f35882895570c0002cf14b46ec91"}
+    },
+    {
+      "id": "canonical/raw-migration-journal",
+      "accepted": true,
+      "coverage": ["raw-byte-digest"],
+      "input": {"kind": "raw_bytes_digest", "path": "bytes/migration-journal-prepared-v1.json"},
+      "expected": {"byteSize": 1979, "sha256": "ec9dd2bbd4d0940788f412ce86bebca0a6725062538e6e2ef34dc2f0da1f436d"}
+    },
+    {
+      "id": "canonical/raw-migration-source-manifest",
+      "accepted": true,
+      "coverage": ["raw-byte-digest"],
+      "input": {"kind": "raw_bytes_digest", "path": "bytes/migration-source-manifest-v1.json"},
+      "expected": {"byteSize": 1220, "sha256": "89b816e17e146d0d6130fb29a26db3f4f6aa3368524d49358266215dc305aa10"}
+    },
+    {
+      "id": "canonical/raw-selected-preference-manual",
+      "accepted": true,
+      "coverage": ["raw-byte-digest"],
+      "input": {"kind": "raw_bytes_digest", "path": "bytes/selected-preference-manual-v1.json"},
+      "expected": {"byteSize": 129, "sha256": "1d2f0c3518bcf1724dcbdfcb47ef294524106eef68814337a1e80da7312cceb7"}
+    },
+    {
+      "id": "canonical/raw-selected-preference-migrated",
+      "accepted": true,
+      "coverage": ["raw-byte-digest"],
+      "input": {"kind": "raw_bytes_digest", "path": "bytes/selected-preference-migrated-v1.json"},
+      "expected": {"byteSize": 131, "sha256": "da4c0a18c3607b76ca7fbfd3a5b6323156d167326ac1350d9b4d62822d5339ec"}
+    },
+    {
+      "id": "canonical/revision-compare-large",
+      "accepted": true,
+      "coverage": ["revision-arithmetic"],
+      "input": {"kind": "revision_compare", "left": "99999999999999999999999999999999999999", "right": "100000000000000000000000000000000000000"},
+      "expected": {"result": -1}
+    },
+    {
+      "id": "canonical/revision-increment-carry",
+      "accepted": true,
+      "coverage": ["revision-arithmetic"],
+      "input": {"kind": "revision_increment", "value": "99999999999999999999999999999999999999"},
+      "expected": {"value": "100000000000000000000000000000000000000"}
+    },
+    {
+      "id": "canonical/runtime-fingerprint",
+      "accepted": true,
+      "coverage": ["runtime-fingerprint"],
+      "input": {"kind": "runtime_fingerprint", "fields": {"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "artifactSha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db", "publicationId": "0123456789abcdef0123456789abcdef", "contextSize": 2048, "requestedAccelerator": "auto", "gpuLayers": 0, "policyProfileVersion": 1}},
+      "expected": {"sha256": "9045afb4538b981664b35371a4d2054fd5408409199f448ede2c31a2a61f5177"}
+    },
+    {
+      "id": "canonical/timestamp-invalid-fraction",
+      "accepted": false,
+      "coverage": ["canonical-timestamp"],
+      "input": {"kind": "timestamp", "value": "2026-08-23T12:34:56.1Z"},
+      "expected": {"canonical": false}
+    },
+    {
+      "id": "canonical/timestamp-invalid-leap-second",
+      "accepted": false,
+      "coverage": ["canonical-timestamp"],
+      "input": {"kind": "timestamp", "value": "2026-08-23T12:34:60Z"},
+      "expected": {"canonical": false}
+    },
+    {
+      "id": "canonical/timestamp-valid",
+      "accepted": true,
+      "coverage": ["canonical-timestamp"],
+      "input": {"kind": "timestamp", "value": "2026-08-23T12:34:56Z"},
+      "expected": {"canonical": true}
+    }
+  ]
+}

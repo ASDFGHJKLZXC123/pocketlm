@@ -1,6 +1,8 @@
-# Inference Protocol v2
+# Inference Protocol v2 with Protocol 2.1 amendment
 
-Status: implemented cross-layer contract.
+Status: implemented v2 event contract plus normative Protocol 2.1 repository
+amendment. The current inference C ABI is 2.1.0 / `0x00020100`. Gate 0B records
+the amendment but does not activate expansion persistence or runtime behavior.
 
 The normative C declaration is `cpp/include/pocketlm_core.h`. The normative
 TurboModule declaration is `app/src/lib/NativePocketLM.ts`. This document fixes
@@ -306,3 +308,105 @@ path; this does not weaken the production sandbox-storage contract.
 accelerator selection, and backend-policy GPU layers (`0`).
 `pocketlm_default_params()` returns 256 output tokens, temperature 0.7, top-k
 40, top-p 0.9, seed -1, and automatic thread selection (`n_threads == 0`).
+
+## Protocol 2.1 amendment — committed paths, leases, publication, and reload
+
+Protocol 2.1 preserves the complete v2 inference event grammar, callback
+ordering, request/session identity, cancellation, terminal delivery, error-code
+mapping, and join-before-free destruction rules above. It adds no inference
+event, finish reason, inference error, EventEmitter channel, or JavaScript
+inference method. It documents how the expansion model repository becomes the
+authority that supplies and protects a model path used by those unchanged
+inference APIs.
+
+### Committed production paths
+
+For expansion-managed production loads, JavaScript may ask the model manager to
+resolve a committed model ID, but the returned string is not authority. The
+process-lifetime native repository independently derives the exact platform
+root and expected catalog directory:
+
+```text
+iOS:     <ApplicationSupport>/PocketLM/Models/<appDirectoryName>/model.gguf
+Android: <filesDir>/PocketLM/Models/<appDirectoryName>/model.gguf
+```
+
+The native load admission path requires completed startup repair, a valid
+immutable installation record, a matching commit marker written last, matching
+catalog artifact and GGUF facts, verified platform protection and backup
+exclusion, and a regular canonical model file. It validates every component
+without following symlinks, rejects traversal, percent tricks, case aliases,
+prefix collisions, hardlinks where single-link ownership is supported, and any
+staging, rollback, quarantine, deleting, or otherwise uncommitted generation.
+It confirms real-path containment and holds stable file identity under the
+repository lease. Production never trusts an arbitrary JavaScript path. The
+separately compiled test-path entry point remains test-only.
+
+### Read leases and unload ordering
+
+Load first obtains a per-model pending admission that excludes writers. While
+holding it, native code performs no-follow validation/open, derives canonical
+file identity from the opened handle, and atomically promotes the admission to
+the exact `(modelId, publicationId, canonical file identity)` read lease before
+writer exclusion can lapse. Failed load releases its pending admission.
+Successful load retains the bound read lease for the native session's entire
+lifetime. Unload first bars new generation, performs the existing cancel,
+terminal-flush, destroy, and session-removal sequence, and releases the lease
+only after native destruction has completed and outside repository callbacks.
+A failed unload retains both the session and its read lease.
+
+Publish, replace, delete, and repair require an exclusive lease. A writer never
+calls inference unload while holding exclusive authority. If readers block it,
+the manager reports `MODEL_IN_USE` and the exact ascending positive session IDs;
+the switch controller unloads them through the existing inference API and then
+retries. Lock order is repository coordinator, per-model lease, then inference
+bridge lifecycle admission. This amendment does not weaken the owner-side handle
+fence required by v2.
+
+### Complete-generation publication
+
+A publication consists of `model.gguf`, immutable `manifest.json`, and
+`commit.json` written last in one operation-scoped staging directory. Hashing,
+GGUF inspection, catalog comparison, fsync, permissions, protection, and backup
+exclusion complete before publication. Under exclusive authority, replacement
+moves the prior complete active directory to same-volume rollback, moves the
+complete staged directory to the active path atomically, fsyncs the parents,
+and reopens and revalidates the new generation before exposing it.
+
+Failure or process death never permits a mixed generation. The candidate is
+quarantined before a prior valid rollback is restored. Neither a durable
+preference nor a path string makes an uncommitted generation loadable, and a
+publication cannot replace/delete bytes while an inference read lease remains.
+
+### Switching and event preservation
+
+An active model switch is serialized as: stop admission, cancel any accepted
+request, await that request's unchanged v2 terminal event, await v2 unload and
+lease release, stage/load the desired committed fingerprint, durably commit the
+preference, and only then publish the desired session as active. A successfully
+loaded desired session remains internal and accepts no generation before that
+commit. Failure follows the rollback/unloaded rules in the expansion Gate 0
+[contract](./EXPANSION_GATE_0_CONTRACTS.md); it never fabricates a v2 terminal
+or changes terminal ordering.
+
+### JavaScript VM reload
+
+Native inference sessions and repository leases are process-global and may
+survive a JavaScript VM reload. A new JavaScript coordinator starts with no
+`activeFingerprint`; a durable preference is not evidence of a native session.
+Before enabling model-manager mutation, it reads the manager snapshot, treats
+every enumerated session ID as orphaned unless the process-global inference
+runtime explicitly reattaches it, calls the existing `unloadModel(sessionId)`,
+awaits completion, and refreshes the snapshot. Failed orphan unload leaves the
+same ID and lease visible and conflicting mutation remains `MODEL_IN_USE` or
+`UNLOAD_FAILED`. No new model-manager unload method or inference event is added.
+
+### ABI and activation boundary
+
+Protocol 2.1 uses the current inference C ABI 2.1.0 / `0x00020100`. The future
+bounded GGUF-inspector symbols are an append-only target for C ABI 2.2.0 /
+`0x00020200`; existing v2 inference symbols and structures remain unchanged.
+This documentation amendment does not itself change TypeScript or C++ readers,
+the production catalog, CMake, codegen, JNI/Objective-C++ adapters, platform
+behavior, or the built ABI. Those changes remain behind their later acceptance
+gates.

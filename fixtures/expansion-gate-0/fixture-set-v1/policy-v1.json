@@ -1,0 +1,167 @@
+{
+  "fixtureSet": "expansion-gate-0/fixture-set-v1",
+  "family": "policy",
+  "cases": [
+    {
+      "id": "policy/android-efficiency-core-count",
+      "accepted": true,
+      "coverage": ["android-thread-policy"],
+      "input": {"kind": "n_threads", "probeStatus": "valid", "platform": "android", "activeProcessorCount": 4, "maxFrequencyKhzByCpu": [2000000, 2000000, 1800000, 1000000]},
+      "expected": {"value": 3}
+    },
+    {
+      "id": "policy/android-exact-90-percent-boundary",
+      "accepted": true,
+      "coverage": ["android-thread-policy"],
+      "input": {"kind": "n_threads", "probeStatus": "valid", "platform": "android", "activeProcessorCount": 3, "maxFrequencyKhzByCpu": [100, 90, 89]},
+      "expected": {"value": 2}
+    },
+    {
+      "id": "policy/android-frequency-unknown-fallback",
+      "accepted": true,
+      "coverage": ["android-thread-policy", "probe-invariants"],
+      "input": {"kind": "n_threads", "probeStatus": "valid", "platform": "android", "activeProcessorCount": 8, "maxFrequencyKhzByCpu": [2000000, null, 1800000, 1000000, 2000000, 2000000, 1800000, 1000000]},
+      "expected": {"value": 4}
+    },
+    {
+      "id": "policy/android-known-frequency-active-cap",
+      "accepted": true,
+      "coverage": ["android-thread-policy"],
+      "input": {"kind": "n_threads", "probeStatus": "valid", "platform": "android", "activeProcessorCount": 1, "maxFrequencyKhzByCpu": [100, 100, 100, 100, 100, 100, 100, 100]},
+      "expected": {"value": 1}
+    },
+    {
+      "id": "policy/below-all-minimum",
+      "accepted": true,
+      "coverage": ["below-minimum"],
+      "input": {"kind": "recommendation", "catalogModels": [{"id": "qwen2.5-0.5b-instruct-q4-k-m", "minTotalRamBytes": 2147483648, "recommendedRamBytes": 4294967296}, {"id": "qwen2.5-1.5b-instruct-q4-k-m", "minTotalRamBytes": 4294967296, "recommendedRamBytes": 6442450944}], "probeStatus": "valid", "totalMemoryBytes": 2147483647},
+      "expected": {"modelId": null, "claimDeviceFit": false}
+    },
+    {
+      "id": "policy/ios-thread-active-1",
+      "accepted": true,
+      "coverage": ["ios-thread-policy"],
+      "input": {"kind": "n_threads", "probeStatus": "valid", "platform": "ios", "activeProcessorCount": 1},
+      "expected": {"value": 1}
+    },
+    {
+      "id": "policy/ios-thread-active-4",
+      "accepted": true,
+      "coverage": ["ios-thread-policy"],
+      "input": {"kind": "n_threads", "probeStatus": "valid", "platform": "ios", "activeProcessorCount": 4},
+      "expected": {"value": 4}
+    },
+    {
+      "id": "policy/ios-thread-active-5",
+      "accepted": true,
+      "coverage": ["ios-thread-policy"],
+      "input": {"kind": "n_threads", "probeStatus": "valid", "platform": "ios", "activeProcessorCount": 5},
+      "expected": {"value": 4}
+    },
+    {
+      "id": "policy/malformed-probe-no-claim",
+      "accepted": true,
+      "coverage": ["malformed-probe"],
+      "input": {"kind": "recommendation", "catalogModels": [{"id": "qwen2.5-0.5b-instruct-q4-k-m", "minTotalRamBytes": 2147483648, "recommendedRamBytes": 4294967296}, {"id": "qwen2.5-1.5b-instruct-q4-k-m", "minTotalRamBytes": 4294967296, "recommendedRamBytes": 6442450944}], "probeStatus": "malformed", "totalMemoryBytes": 8589934592},
+      "expected": {"modelId": null, "claimDeviceFit": false}
+    },
+    {
+      "id": "policy/malformed-probe-nthreads-zero",
+      "accepted": true,
+      "coverage": ["malformed-probe"],
+      "input": {"kind": "n_threads", "probeStatus": "malformed", "platform": "ios", "activeProcessorCount": 8},
+      "expected": {"value": 0}
+    },
+    {
+      "id": "policy/manual-below-recommended-advisory",
+      "accepted": true,
+      "coverage": ["manual-advisory"],
+      "input": {"kind": "manual_selection", "modelId": "qwen2.5-1.5b-instruct-q4-k-m", "totalMemoryBytes": 4294967296, "minTotalRamBytes": 4294967296, "recommendedRamBytes": 6442450944},
+      "expected": {"selection": "allowed", "warning": "below-recommended-memory", "hidden": false}
+    },
+    {
+      "id": "policy/missing-probe-no-claim",
+      "accepted": true,
+      "coverage": ["missing-probe"],
+      "input": {"kind": "recommendation", "catalogModels": [{"id": "qwen2.5-0.5b-instruct-q4-k-m", "minTotalRamBytes": 2147483648, "recommendedRamBytes": 4294967296}, {"id": "qwen2.5-1.5b-instruct-q4-k-m", "minTotalRamBytes": 4294967296, "recommendedRamBytes": 6442450944}], "probeStatus": "missing", "totalMemoryBytes": 8589934592},
+      "expected": {"modelId": null, "claimDeviceFit": false}
+    },
+    {
+      "id": "policy/missing-probe-nthreads-zero",
+      "accepted": true,
+      "coverage": ["missing-probe"],
+      "input": {"kind": "n_threads", "probeStatus": "missing", "platform": "ios", "activeProcessorCount": 8},
+      "expected": {"value": 0}
+    },
+    {
+      "id": "policy/probe-closed-shape-matrix",
+      "accepted": true,
+      "coverage": ["probe-closed-shapes"],
+      "input": {"kind": "probe_invariants", "validSnapshots": [{"schemaVersion": 1, "platform": "ios", "isSimulator": false, "totalMemoryBytes": 4294967296, "availableMemoryBytes": 0, "activeProcessorCount": 4, "processorCount": 6, "freeDiskBytes": 8589934592, "limitations": ["AVAILABLE_MEMORY_UNKNOWN"]}, {"schemaVersion": 1, "platform": "android", "isSimulator": false, "totalMemoryBytes": 6442450944, "availableMemoryBytes": 2147483648, "activeProcessorCount": 3, "processorCount": 3, "freeDiskBytes": 8589934592, "limitations": [], "android": {"isLowRamDevice": false, "onlineProcessorCount": 3, "maxFrequencyKhzByCpu": [100, 90, 89], "arm64DotProduct": true, "pageSizeBytes": 16384}}], "invalidVariants": ["ios-has-android-object", "android-missing-android-object", "unknown-root-field", "frequency-length-not-processor-count", "active-exceeds-processor-count", "limitation-out-of-order"]},
+      "expected": {"validCount": 2, "invalidCount": 6, "invalidPartiallyInterpreted": false}
+    },
+    {
+      "id": "policy/probe-limitation-invariants",
+      "accepted": true,
+      "coverage": ["probe-invariants"],
+      "input": {"kind": "probe_invariants", "snapshots": [{"platform": "ios", "isSimulator": false, "availableMemoryBytes": 0, "limitations": ["AVAILABLE_MEMORY_UNKNOWN"]}, {"platform": "android", "isSimulator": true, "availableMemoryBytes": 1, "android": {"maxFrequencyKhzByCpu": [2000000, null]}, "processorCount": 2, "limitations": ["CPU_FREQUENCY_UNKNOWN", "SIMULATOR_HOST_FACTS"]}]},
+      "expected": {"availableMemoryUnknownIffZeroOnIos": true, "cpuFrequencyUnknownIffAnyNullOnAndroid": true, "frequencyArrayLengthEqualsProcessorCount": true, "limitationsUniqueAndEnumOrdered": true, "simulatorFlagIffLimitation": true}
+    },
+    {
+      "id": "policy/ram-at-2g-fallback-minimum",
+      "accepted": true,
+      "coverage": ["boundary-2g"],
+      "input": {"kind": "recommendation", "catalogModels": [{"id": "qwen2.5-0.5b-instruct-q4-k-m", "minTotalRamBytes": 2147483648, "recommendedRamBytes": 4294967296}, {"id": "qwen2.5-1.5b-instruct-q4-k-m", "minTotalRamBytes": 4294967296, "recommendedRamBytes": 6442450944}], "probeStatus": "valid", "totalMemoryBytes": 2147483648},
+      "expected": {"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "claimDeviceFit": true}
+    },
+    {
+      "id": "policy/ram-at-4g-recommends-0.5b",
+      "accepted": true,
+      "coverage": ["boundary-4g"],
+      "input": {"kind": "recommendation", "catalogModels": [{"id": "qwen2.5-0.5b-instruct-q4-k-m", "minTotalRamBytes": 2147483648, "recommendedRamBytes": 4294967296}, {"id": "qwen2.5-1.5b-instruct-q4-k-m", "minTotalRamBytes": 4294967296, "recommendedRamBytes": 6442450944}], "probeStatus": "valid", "totalMemoryBytes": 4294967296},
+      "expected": {"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "claimDeviceFit": true}
+    },
+    {
+      "id": "policy/ram-at-6g-recommends-1.5b",
+      "accepted": true,
+      "coverage": ["boundary-6g"],
+      "input": {"kind": "recommendation", "catalogModels": [{"id": "qwen2.5-0.5b-instruct-q4-k-m", "minTotalRamBytes": 2147483648, "recommendedRamBytes": 4294967296}, {"id": "qwen2.5-1.5b-instruct-q4-k-m", "minTotalRamBytes": 4294967296, "recommendedRamBytes": 6442450944}], "probeStatus": "valid", "totalMemoryBytes": 6442450944},
+      "expected": {"modelId": "qwen2.5-1.5b-instruct-q4-k-m", "claimDeviceFit": true}
+    },
+    {
+      "id": "policy/ram-below-4g-recommends-0.5b",
+      "accepted": true,
+      "coverage": ["boundary-4g"],
+      "input": {"kind": "recommendation", "catalogModels": [{"id": "qwen2.5-0.5b-instruct-q4-k-m", "minTotalRamBytes": 2147483648, "recommendedRamBytes": 4294967296}, {"id": "qwen2.5-1.5b-instruct-q4-k-m", "minTotalRamBytes": 4294967296, "recommendedRamBytes": 6442450944}], "probeStatus": "valid", "totalMemoryBytes": 4294967295},
+      "expected": {"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "claimDeviceFit": true}
+    },
+    {
+      "id": "policy/ram-below-6g-recommends-0.5b",
+      "accepted": true,
+      "coverage": ["boundary-6g"],
+      "input": {"kind": "recommendation", "catalogModels": [{"id": "qwen2.5-0.5b-instruct-q4-k-m", "minTotalRamBytes": 2147483648, "recommendedRamBytes": 4294967296}, {"id": "qwen2.5-1.5b-instruct-q4-k-m", "minTotalRamBytes": 4294967296, "recommendedRamBytes": 6442450944}], "probeStatus": "valid", "totalMemoryBytes": 6442450943},
+      "expected": {"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "claimDeviceFit": true}
+    },
+    {
+      "id": "policy/runtime-config-missing-probe",
+      "accepted": true,
+      "coverage": ["runtime-config"],
+      "input": {"kind": "runtime_config", "model": {"initialContextTokens": 2048}, "probeStatus": "missing", "resolvedThreads": 0},
+      "expected": {"contextSize": 2048, "requestedAccelerator": "auto", "gpuLayers": 0, "nThreads": 0, "policyProfileVersion": 1, "recommendationClaim": false}
+    },
+    {
+      "id": "policy/runtime-config-profile-v1",
+      "accepted": true,
+      "coverage": ["runtime-config"],
+      "input": {"kind": "runtime_config", "model": {"initialContextTokens": 2048}, "probeStatus": "valid", "resolvedThreads": 4},
+      "expected": {"contextSize": 2048, "requestedAccelerator": "auto", "gpuLayers": 0, "nThreads": 4, "policyProfileVersion": 1}
+    },
+    {
+      "id": "policy/simulator-remains-advisory",
+      "accepted": true,
+      "coverage": ["simulator-advisory"],
+      "input": {"kind": "simulator_advisory", "isSimulator": true, "totalMemoryBytes": 17179869184, "limitations": ["SIMULATOR_HOST_FACTS"]},
+      "expected": {"modelsHidden": false, "modelsBlocked": false, "physicalDeviceClaim": false}
+    }
+  ]
+}

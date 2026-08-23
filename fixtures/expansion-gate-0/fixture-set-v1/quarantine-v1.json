@@ -1,0 +1,83 @@
+{
+  "fixtureSet": "expansion-gate-0/fixture-set-v1",
+  "family": "quarantine",
+  "cases": [
+    {
+      "id": "quarantine/ambiguous-equal-revision-fails-closed",
+      "accepted": false,
+      "coverage": ["malformed-ambiguity"],
+      "input": {"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "records": [{"quarantineId": "22222222222222222222222222222222", "createdManagerRevision": "12", "byteSize": 491400032}, {"quarantineId": "33333333333333333333333333333333", "createdManagerRevision": "12", "byteSize": 491400032}]},
+      "expected": {"repair": "fail-closed", "managerReady": false, "deleteEitherByGuessing": false}
+    },
+    {
+      "id": "quarantine/closed-valid-record",
+      "accepted": true,
+      "coverage": ["closed-schema"],
+      "input": {"schemaVersion": 1, "quarantineId": "22222222222222222222222222222222", "modelId": "qwen2.5-0.5b-instruct-q4-k-m", "publicationId": "0123456789abcdef0123456789abcdef", "sourceKind": "active", "reason": "INVALID_ACTIVE", "createdManagerRevision": "12", "quarantinedAt": "2026-08-23T12:35:01Z", "byteSize": 491400032},
+      "expected": {"result": "accepted", "loadable": false, "managerStateIndexMustMatch": true}
+    },
+    {
+      "id": "quarantine/disk-preflight-includes-retained-bytes",
+      "accepted": true,
+      "coverage": ["disk-preflight"],
+      "input": {"freeDiskBytes": 1700000000, "candidateBytes": 1117320736, "retainedQuarantineBytes": 491400032, "otherRequiredBytes": 100000000},
+      "expected": {"requiredBytes": 1708720768, "sufficient": false, "errorCode": "INSUFFICIENT_SPACE"}
+    },
+    {
+      "id": "quarantine/explicit-delete-damaged-files",
+      "accepted": true,
+      "coverage": ["explicit-delete"],
+      "input": {"activeGeneration": null, "retainedQuarantine": {"quarantineId": "22222222222222222222222222222222", "modelId": "qwen2.5-0.5b-instruct-q4-k-m"}, "userAction": "Delete damaged files", "method": "deleteInstallation", "preparedReceiptTarget": {"targetPublicationId": null, "targetQuarantineId": "22222222222222222222222222222222", "selectionReleasePlan": {"kind": "none"}}},
+      "expected": {"removeQuarantine": true, "installStateAfter": "missing", "recoverableAfterDelete": false, "differentLaterQuarantineRemoved": false}
+    },
+    {
+      "id": "quarantine/index-directory-disagreement",
+      "accepted": false,
+      "coverage": ["index-directory-agreement"],
+      "input": {"managerStateRecord": {"quarantineId": "22222222222222222222222222222222", "modelId": "qwen2.5-0.5b-instruct-q4-k-m", "byteSize": 491400032}, "directoryRecords": [{"quarantineId": "33333333333333333333333333333333", "modelId": "qwen2.5-0.5b-instruct-q4-k-m", "byteSize": 491400031}], "directoryCount": 1},
+      "expected": {"repair": "fail-closed", "managerReady": false, "cleanupBeforeResolution": false}
+    },
+    {
+      "id": "quarantine/newest-manager-revision-retained",
+      "accepted": true,
+      "coverage": ["newest-retention"],
+      "input": {"repairComplete": false, "records": [{"quarantineId": "22222222222222222222222222222222", "createdManagerRevision": "9"}, {"quarantineId": "33333333333333333333333333333333", "createdManagerRevision": "10"}]},
+      "expected": {"retainedQuarantineId": "33333333333333333333333333333333", "deleteOlderBeforeRepairComplete": false, "deleteOlderAfterRepairComplete": true}
+    },
+    {
+      "id": "quarantine/no-age-based-deletion",
+      "accepted": true,
+      "coverage": ["no-age-deletion"],
+      "input": {"quarantinedAt": "0001-01-01T00:00:00Z", "successfulReplacement": false, "explicitDelete": false},
+      "expected": {"retain": true, "timestampOrdersState": false}
+    },
+    {
+      "id": "quarantine/not-loadable-and-ui-recovery",
+      "accepted": true,
+      "coverage": ["not-loadable", "ui-recovery"],
+      "input": {"activeGeneration": null, "retainedQuarantine": {"quarantineId": "22222222222222222222222222222222", "modelId": "qwen2.5-0.5b-instruct-q4-k-m"}},
+      "expected": {"installState": "invalid", "resolveLoadPath": "PATH_REJECTED", "actions": ["Retry install", "Delete damaged files"]}
+    },
+    {
+      "id": "quarantine/reason-enum-exhaustive",
+      "accepted": true,
+      "coverage": ["reason-enum"],
+      "input": {"reasons": ["INVALID_ACTIVE", "UNAUTHORIZED_STAGING", "AMBIGUOUS_STAGING", "INVALID_ROLLBACK", "AMBIGUOUS_ROLLBACK", "PUBLICATION_FAILED", "MISSING_COMMIT_MARKER", "PROTECTION_DRIFT", "BACKUP_EXCLUSION_DRIFT", "MIGRATION_CONFLICT"]},
+      "expected": {"stableOrder": true, "unknownReasonRejected": true, "diagnosticTextControlsFlow": false}
+    },
+    {
+      "id": "quarantine/successful-reinstall-clears-model-quarantine",
+      "accepted": true,
+      "coverage": ["successful-repair"],
+      "input": {"retainedQuarantine": {"quarantineId": "22222222222222222222222222222222", "modelId": "qwen2.5-0.5b-instruct-q4-k-m"}, "replacement": {"publicationId": "fedcba9876543210fedcba9876543210", "commitDurable": true, "revalidated": true}},
+      "expected": {"removeQuarantineAfterCommit": true, "installState": "committed", "publicationId": "fedcba9876543210fedcba9876543210"}
+    },
+    {
+      "id": "quarantine/unknown-field-rejected",
+      "accepted": false,
+      "coverage": ["closed-schema"],
+      "input": {"schemaVersion": 1, "quarantineId": "22222222222222222222222222222222", "modelId": "qwen2.5-0.5b-instruct-q4-k-m", "publicationId": null, "sourceKind": "staging", "reason": "UNAUTHORIZED_STAGING", "createdManagerRevision": "12", "quarantinedAt": "2026-08-23T12:35:01Z", "byteSize": 491400032, "deleteAfterDays": 30},
+      "expected": {"result": "rejected", "reason": "closed-schema-unknown-field"}
+    }
+  ]
+}

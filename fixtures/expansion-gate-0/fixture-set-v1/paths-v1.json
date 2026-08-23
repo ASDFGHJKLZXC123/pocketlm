@@ -1,0 +1,104 @@
+{
+  "fixtureSet": "expansion-gate-0/fixture-set-v1",
+  "family": "paths",
+  "cases": [
+    {
+      "id": "paths/absolute-caller-path-rejected",
+      "accepted": false,
+      "coverage": ["absolute-path"],
+      "input": {"root": "/app/support/PocketLM/Models", "modelId": "qwen2.5-0.5b-instruct-q4-k-m", "callerPath": "/tmp/model.gguf"},
+      "expected": {"result": "rejected", "errorCode": "PATH_REJECTED", "pathExposed": false}
+    },
+    {
+      "id": "paths/casefold-prefix-rejected",
+      "accepted": false,
+      "coverage": ["casefold-prefix"],
+      "input": {"root": "/app/support/PocketLM/Models", "appDirectoryName": "qwen2.5-0.5b-q4km", "resolvedPath": "/app/support/PocketLM/models/qwen2.5-0.5b-q4km/model.gguf"},
+      "expected": {"result": "rejected", "errorCode": "PATH_REJECTED", "reason": "root-component-case-mismatch"}
+    },
+    {
+      "id": "paths/hardlink-model-rejected",
+      "accepted": false,
+      "coverage": ["hardlink"],
+      "input": {"candidate": "qwen2.5-0.5b-q4km/model.gguf", "regularFile": true, "linkCount": 2, "sameDeviceAsRoot": true},
+      "expected": {"result": "rejected", "errorCode": "PATH_REJECTED", "reason": "hardlink-not-exclusive"}
+    },
+    {
+      "id": "paths/marker-drift-rejected",
+      "accepted": false,
+      "coverage": ["marker-drift"],
+      "input": {"resolvedPublicationId": "0123456789abcdef0123456789abcdef", "markerPublicationId": "fedcba9876543210fedcba9876543210", "manifestPublicationId": "0123456789abcdef0123456789abcdef"},
+      "expected": {"result": "rejected", "errorCode": "PATH_REJECTED", "leaseGranted": false}
+    },
+    {
+      "id": "paths/nul-and-invalid-scalar-rejected",
+      "accepted": false,
+      "coverage": ["nul-and-unicode"],
+      "input": {"rawComponentVectors": [{"label": "embedded-nul", "utf8Hex": "7177656e002f6d6f64656c2e67677566"}, {"label": "surrogate-utf8", "utf8Hex": "7177656e2feda0802f6d6f64656c2e67677566"}]},
+      "expected": {"result": "rejected", "errorCode": "INVALID_ARGUMENT", "normalizationAttempted": false, "surrogateBytesAreInvalidUtf8": true}
+    },
+    {
+      "id": "paths/outside-root-rejected",
+      "accepted": false,
+      "coverage": ["outside-root"],
+      "input": {"rootDevice": 1, "rootInode": 100, "walkedParent": "/app/support/PocketLM", "candidate": "Models/qwen2.5-0.5b-q4km/model.gguf", "resolved": "/private/outside/model.gguf"},
+      "expected": {"result": "rejected", "errorCode": "PATH_REJECTED", "reason": "canonical-file-outside-root"}
+    },
+    {
+      "id": "paths/percent-encoded-traversal-rejected",
+      "accepted": false,
+      "coverage": ["traversal"],
+      "input": {"appDirectoryName": "%2e%2e", "installedFilename": "model.gguf", "decodePercent": false},
+      "expected": {"result": "rejected", "errorCode": "PATH_REJECTED", "reason": "unsafe-component"}
+    },
+    {
+      "id": "paths/prefix-collision-rejected",
+      "accepted": false,
+      "coverage": ["prefix-collision"],
+      "input": {"root": "/app/support/PocketLM/Models", "resolved": "/app/support/PocketLM/Models-evil/qwen/model.gguf"},
+      "expected": {"result": "rejected", "errorCode": "PATH_REJECTED", "reason": "component-boundary-not-prefix-string"}
+    },
+    {
+      "id": "paths/staging-and-quarantine-not-loadable",
+      "accepted": false,
+      "coverage": ["staging-quarantine"],
+      "input": {"candidates": [".staging/qwen2.5-0.5b-instruct-q4-k-m/11111111111111111111111111111111/model.gguf", ".quarantine/qwen2.5-0.5b-instruct-q4-k-m/22222222222222222222222222222222/model.gguf"]},
+      "expected": {"result": "rejected", "errorCode": "PATH_REJECTED", "productionLoadAddressable": false}
+    },
+    {
+      "id": "paths/symlink-final-rejected",
+      "accepted": false,
+      "coverage": ["symlink-final"],
+      "input": {"walk": [{"component": "qwen2.5-0.5b-q4km", "type": "directory"}, {"component": "model.gguf", "type": "symlink"}]},
+      "expected": {"result": "rejected", "errorCode": "PATH_REJECTED", "followedSymlink": false}
+    },
+    {
+      "id": "paths/symlink-parent-rejected",
+      "accepted": false,
+      "coverage": ["symlink-parent"],
+      "input": {"walk": [{"component": "qwen2.5-0.5b-q4km", "type": "symlink"}, {"component": "model.gguf", "type": "regular"}]},
+      "expected": {"result": "rejected", "errorCode": "PATH_REJECTED", "followedSymlink": false}
+    },
+    {
+      "id": "paths/traversal-dotdot-rejected",
+      "accepted": false,
+      "coverage": ["traversal"],
+      "input": {"appDirectoryName": "..", "installedFilename": "model.gguf"},
+      "expected": {"result": "rejected", "errorCode": "PATH_REJECTED", "reason": "dot-component"}
+    },
+    {
+      "id": "paths/valid-android-canonical",
+      "accepted": true,
+      "coverage": ["valid-canonical"],
+      "input": {"platform": "android", "rootSource": "context.filesDir", "root": "/data/user/0/app/files/PocketLM/Models", "modelId": "qwen2.5-0.5b-instruct-q4-k-m", "appDirectoryName": "qwen2.5-0.5b-q4km", "installedFilename": "model.gguf", "publicationId": "0123456789abcdef0123456789abcdef"},
+      "expected": {"canonicalPath": "/data/user/0/app/files/PocketLM/Models/qwen2.5-0.5b-q4km/model.gguf", "leaseKey": {"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "publicationId": "0123456789abcdef0123456789abcdef", "canonicalFileIdentity": {"deviceId": "fixture-device-1", "fileId": "fixture-file-100", "byteSize": 491400032}}}
+    },
+    {
+      "id": "paths/valid-ios-canonical",
+      "accepted": true,
+      "coverage": ["valid-canonical"],
+      "input": {"platform": "ios", "rootSource": "applicationSupportDirectory", "root": "/app/support/PocketLM/Models", "modelId": "qwen2.5-0.5b-instruct-q4-k-m", "appDirectoryName": "qwen2.5-0.5b-q4km", "installedFilename": "model.gguf", "publicationId": "0123456789abcdef0123456789abcdef"},
+      "expected": {"canonicalPath": "/app/support/PocketLM/Models/qwen2.5-0.5b-q4km/model.gguf", "leaseKey": {"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "publicationId": "0123456789abcdef0123456789abcdef", "canonicalFileIdentity": {"deviceId": "fixture-device-1", "fileId": "fixture-file-100", "byteSize": 491400032}}}
+    }
+  ]
+}

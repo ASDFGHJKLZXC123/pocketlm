@@ -1,0 +1,104 @@
+{
+  "fixtureSet": "expansion-gate-0/fixture-set-v1",
+  "family": "catalog",
+  "cases": [
+    {
+      "id": "catalog/colliding-identities-rejected",
+      "accepted": false,
+      "coverage": ["casefold-collision", "duplicate-identity"],
+      "input": {"bytesFile": "bytes/catalog-v2-colliding-models.json", "schema": "CatalogV2"},
+      "expected": {"result": "rejected", "errorCode": "CATALOG_UNSUPPORTED", "reason": "identity-or-casefold-collision"}
+    },
+    {
+      "id": "catalog/empty-rejected",
+      "accepted": false,
+      "coverage": ["empty"],
+      "input": {"bytesFile": "bytes/catalog-v2-empty.json", "schema": "CatalogV2"},
+      "expected": {"result": "rejected", "errorCode": "CATALOG_UNSUPPORTED", "reason": "model-count-out-of-range"}
+    },
+    {
+      "id": "catalog/exact-template-equality",
+      "accepted": true,
+      "coverage": ["template-equality"],
+      "input": {"bytesFile": "bytes/catalog-v2-two-models.json", "modelIds": ["qwen2.5-0.5b-instruct-q4-k-m", "qwen2.5-1.5b-instruct-q4-k-m"]},
+      "expected": {"templateByteSizeBoth": 2509, "templateSha256Both": "d5495a1e5db0611132a97e46a65dbb64a642a499421228b9c8b93229097fa9a4", "equalityUsesExactBytes": true}
+    },
+    {
+      "id": "catalog/invalid-authentication-rejected",
+      "accepted": false,
+      "coverage": ["license-authentication", "source-url-pinning"],
+      "input": {"bytesFile": "bytes/catalog-v2-invalid-authentication.json", "schema": "CatalogV2"},
+      "expected": {"result": "rejected", "errorCode": "CATALOG_UNSUPPORTED", "reason": "mutable-or-unauthenticated-source"}
+    },
+    {
+      "id": "catalog/invalid-metadata-rejected",
+      "accepted": false,
+      "coverage": ["metadata-closed-shape", "template-authentication", "utf8-exact-comparison"],
+      "input": {"bytesFile": "bytes/catalog-v2-invalid-metadata.json", "schema": "CatalogV2"},
+      "expected": {"result": "rejected", "errorCode": "CATALOG_UNSUPPORTED", "reason": "required-metadata-not-closed"}
+    },
+    {
+      "id": "catalog/invalid-policy-bounds-rejected",
+      "accepted": false,
+      "coverage": ["integer-bounds", "ram-thresholds"],
+      "input": {"bytesFile": "bytes/catalog-v2-invalid-policy-bounds.json", "schema": "CatalogV2"},
+      "expected": {"result": "rejected", "errorCode": "CATALOG_UNSUPPORTED", "reason": "invalid-positive-integer-or-ram-inversion"}
+    },
+    {
+      "id": "catalog/legacy-v1-recognized",
+      "accepted": true,
+      "coverage": ["legacy-v1"],
+      "input": {"bytesFile": "bytes/catalog-v1-legacy.json", "schema": "CatalogV1"},
+      "expected": {"result": "legacy-supported", "schemaVersion": 1, "activation": "unchanged"}
+    },
+    {
+      "id": "catalog/metadata-authentication-matrix",
+      "accepted": false,
+      "coverage": ["metadata-closed-shape", "template-authentication", "utf8-exact-comparison"],
+      "input": {"baseDocument": "bytes/catalog-v2-one-model.json", "primaryViolationVariants": ["unknown-required-metadata-key", "unknown-template-predicate", "architecture-case-change", "template-byte-size", "template-sha256", "missing-required-fragment", "duplicate-required-fragment", "fragment-over-128-utf8-bytes"]},
+      "expected": {"allRejectedWith": "CATALOG_UNSUPPORTED", "normalizationApplied": false, "templateHashIsIdentityAuthority": true}
+    },
+    {
+      "id": "catalog/pinned-byte-and-ram-values",
+      "accepted": true,
+      "coverage": ["pinned-policy-values"],
+      "input": {"bytesFile": "bytes/catalog-v2-two-models.json"},
+      "expected": {"models": [{"id": "qwen2.5-0.5b-instruct-q4-k-m", "artifactBytes": 491400032, "licenseBytes": 11343, "templateBytes": 2509, "minTotalRamBytes": 2147483648, "recommendedRamBytes": 4294967296}, {"id": "qwen2.5-1.5b-instruct-q4-k-m", "artifactBytes": 1117320736, "licenseBytes": 11343, "templateBytes": 2509, "minTotalRamBytes": 4294967296, "recommendedRamBytes": 6442450944}]}
+    },
+    {
+      "id": "catalog/repository-and-url-validation",
+      "accepted": false,
+      "coverage": ["repository-grammar", "source-url-pinning"],
+      "input": {"baseDocument": "bytes/catalog-v2-one-model.json", "primaryViolationVariants": ["repository-missing-slash", "repository-dot-component", "repository-percent-encoding", "source-url-query", "source-url-fragment", "source-url-credentials", "source-url-wrong-revision", "license-url-blob", "license-url-wrong-revision"]},
+      "expected": {"allRejectedWith": "CATALOG_UNSUPPORTED", "redirectUrlAccepted": false}
+    },
+    {
+      "id": "catalog/unknown-schema-rejected",
+      "accepted": false,
+      "coverage": ["unknown-schema"],
+      "input": {"bytesFile": "bytes/catalog-v2-unknown-schema.json", "schema": "CatalogV2"},
+      "expected": {"result": "rejected", "errorCode": "CATALOG_UNSUPPORTED", "reason": "unknown-schema-version"}
+    },
+    {
+      "id": "catalog/unsafe-name-rejected",
+      "accepted": false,
+      "coverage": ["unsafe-name"],
+      "input": {"bytesFile": "bytes/catalog-v2-unsafe-name.json", "schema": "CatalogV2"},
+      "expected": {"result": "rejected", "errorCode": "PATH_REJECTED", "reason": "unsafe-catalog-component"}
+    },
+    {
+      "id": "catalog/valid-one-model",
+      "accepted": true,
+      "coverage": ["valid-one-model"],
+      "input": {"bytesFile": "bytes/catalog-v2-one-model.json", "schema": "CatalogV2"},
+      "expected": {"result": "accepted", "modelIds": ["qwen2.5-0.5b-instruct-q4-k-m"]}
+    },
+    {
+      "id": "catalog/valid-two-models",
+      "accepted": true,
+      "coverage": ["valid-two-model"],
+      "input": {"bytesFile": "bytes/catalog-v2-two-models.json", "schema": "CatalogV2"},
+      "expected": {"result": "accepted", "modelIds": ["qwen2.5-0.5b-instruct-q4-k-m", "qwen2.5-1.5b-instruct-q4-k-m"]}
+    }
+  ]
+}

@@ -1,0 +1,132 @@
+{
+  "fixtureSet": "expansion-gate-0/fixture-set-v1",
+  "family": "preference",
+  "cases": [
+    {
+      "id": "preference/all-origins",
+      "accepted": true,
+      "coverage": ["all-origins"],
+      "input": {"documents": [{"schemaVersion": 1, "revision": "1", "modelId": "qwen2.5-0.5b-instruct-q4-k-m", "origin": "manual", "updatedAt": "2026-08-23T12:34:56Z"}, {"schemaVersion": 1, "revision": "2", "modelId": "qwen2.5-0.5b-instruct-q4-k-m", "origin": "recommended", "updatedAt": "2026-08-23T12:34:57Z"}, {"schemaVersion": 1, "revision": "3", "modelId": "qwen2.5-0.5b-instruct-q4-k-m", "origin": "migrated", "updatedAt": "2026-08-23T12:34:58Z"}, {"schemaVersion": 1, "revision": "4", "modelId": "qwen2.5-0.5b-instruct-q4-k-m", "origin": "fallback", "updatedAt": "2026-08-23T12:34:59Z"}]},
+      "expected": {"result": "accepted", "durableOrigins": ["manual", "recommended", "migrated", "fallback"]}
+    },
+    {
+      "id": "preference/corrupt-newer-and-missing",
+      "accepted": false,
+      "coverage": ["missing-corrupt-newer"],
+      "input": {"variants": [{"kind": "missing"}, {"kind": "corrupt", "bytesUtf8": "{"}, {"kind": "newer", "document": {"schemaVersion": 2, "revision": "1", "modelId": "qwen2.5-0.5b-instruct-q4-k-m", "origin": "manual", "updatedAt": "2026-08-23T12:34:56Z"}}]},
+      "expected": {"result": "fallback-resolution-required", "partiallyInterpret": false}
+    },
+    {
+      "id": "preference/deterministic-fallback",
+      "accepted": true,
+      "coverage": ["deterministic-fallback"],
+      "input": {"preference": null, "recommendedModelId": "qwen2.5-1.5b-instruct-q4-k-m", "catalogOrder": ["qwen2.5-0.5b-instruct-q4-k-m", "qwen2.5-1.5b-instruct-q4-k-m"], "installations": [{"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "valid": true}, {"modelId": "qwen2.5-1.5b-instruct-q4-k-m", "valid": false}]},
+      "expected": {"modelId": "qwen2.5-0.5b-instruct-q4-k-m", "origin": "fallback", "persistAfterRepair": true}
+    },
+    {
+      "id": "preference/migration-crash-after-marker",
+      "accepted": true,
+      "coverage": ["migration-crash-recovery"],
+      "input": {"journalPhase": "markerWritten", "v2Loadable": true, "preferenceFile": null, "retainedPreferenceCounter": "0", "journalNextPreferenceRevision": "1", "journalPreferenceBytesFile": "bytes/selected-preference-migrated-v1.json"},
+      "expected": {"repair": "write-frozen-preference-then-advance-counter", "removeJournalAfter": true}
+    },
+    {
+      "id": "preference/migration-crash-after-preference",
+      "accepted": true,
+      "coverage": ["migration-crash-recovery"],
+      "input": {"journalPhase": "preferenceWritten", "v2Loadable": true, "preferenceBytesFile": "bytes/selected-preference-migrated-v1.json", "preferenceSha256Matches": true, "retainedPreferenceCounter": "0", "journalNextPreferenceRevision": "1"},
+      "expected": {"repair": "advance-and-fsync-counter-then-complete", "rewritePreference": false, "fallbackBeforeCompletion": false}
+    },
+    {
+      "id": "preference/migration-crash-before-marker",
+      "accepted": true,
+      "coverage": ["migration-crash-recovery"],
+      "input": {"journalPhase": "prepared", "v1PairValid": true, "v2ManifestPresent": false, "v2MarkerPresent": false, "preferenceFile": null},
+      "expected": {"repair": "resume-record-then-marker-then-preference", "fallbackBeforeCompletion": false}
+    },
+    {
+      "id": "preference/migration-journal-boundaries",
+      "accepted": true,
+      "coverage": ["migration-journal-boundaries"],
+      "input": {"phases": ["prepared", "recordWritten", "markerWritten", "preferenceWritten", "counterAdvanced", "complete"], "acceptedExactByteSize": 1048576, "rejectedByteSize": 1048577, "closedSchemaUnknownField": "nativeResumeBlob", "targetChecks": ["targetPublicationId", "targetManifestSha256", "targetMarkerBytesSha256", "preferenceBytesSha256", "sourceManifestSha256"]},
+      "expected": {"allPhasesRecognized": true, "atLimit": "accepted", "overLimit": "STORAGE_IO", "unknownField": "rejected", "anyTargetMismatch": "fail-closed"}
+    },
+    {
+      "id": "preference/migration-journal-disagreement",
+      "accepted": false,
+      "coverage": ["journal-disagreement"],
+      "input": {"sourceManifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "journalSourceManifestSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "journalPreferenceSha256": "1d2f0c3518bcf1724dcbdfcb47ef294524106eef68814337a1e80da7312cceb7", "actualPreferenceSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"},
+      "expected": {"repair": "fail-closed", "managerReady": false, "errorCode": "STORAGE_IO"}
+    },
+    {
+      "id": "preference/migration-journal-valid-prepared",
+      "accepted": true,
+      "coverage": ["migration-journal-valid"],
+      "input": {"bytesFile": "bytes/migration-journal-prepared-v1.json", "schema": "MigrationJournalV1"},
+      "expected": {"byteSize": 1979, "sha256": "ec9dd2bbd4d0940788f412ce86bebca0a6725062538e6e2ef34dc2f0da1f436d", "nestedByteDigestsMatch": true, "phase": "prepared"}
+    },
+    {
+      "id": "preference/migration-timestamp-matrix",
+      "accepted": true,
+      "coverage": ["migration-timestamp-subset"],
+      "input": {"accepted": ["0001-01-01T00:00:00Z", "9999-12-31T23:59:59Z", "2026-08-23T12:34:56.1Z", "2026-08-23T12:34:56.123456789Z", "2026-08-23T14:34:56+02:00", "2026-08-23T02:34:56-10:00", "2026-08-23T22:34:56+14:00"], "rejected": ["20260823T123456Z", "2026-235T12:34:56Z", "2026-W34-7T12:34:56Z", "2026-08-23 12:34:56Z", "2026-08-23T12:34:56", "2026-08-23T12:34:56z", "2026-08-23T12:34:60Z", "2026-08-23T12:34:56.1234567890Z", "2026-08-23T12:34:56+14:01", "0001-01-01T00:00:00+14:00", "9999-12-31T23:59:59-14:00"]},
+      "expected": {"acceptedCount": 7, "rejectedCount": 11, "utcThenTruncate": true, "utcResultYearRange": "0001-9999"}
+    },
+    {
+      "id": "preference/migration-timestamp-offset",
+      "accepted": true,
+      "coverage": ["migration-timestamp-subset"],
+      "input": {"legacyInstalledAt": "2026-08-23T14:04:56.987654321+01:30", "rejectedExamples": ["20260823T123456Z", "2026-08-23 12:34:56Z", "2026-08-23T12:34:56z", "2026-08-23T12:34:60Z"]},
+      "expected": {"installedAt": "2026-08-23T12:34:56Z", "fractionHandling": "truncate-after-utc-conversion"}
+    },
+    {
+      "id": "preference/public-origin-authority",
+      "accepted": true,
+      "coverage": ["public-origin-authority"],
+      "input": {"method": "setSelectedPreference", "publicAcceptedOrigins": ["manual", "recommended"], "internalOnlyOrigins": ["migrated", "fallback"]},
+      "expected": {"manual": "accepted", "recommended": "accepted", "migrated": "INVALID_ARGUMENT", "fallback": "INVALID_ARGUMENT"}
+    },
+    {
+      "id": "preference/raw-byte-identity",
+      "accepted": true,
+      "coverage": ["exact-raw-bytes"],
+      "input": {"bytesFile": "bytes/selected-preference-manual-v1.json", "hashMode": "exact-complete-bytes"},
+      "expected": {"byteSize": 129, "sha256": "1d2f0c3518bcf1724dcbdfcb47ef294524106eef68814337a1e80da7312cceb7", "terminalLfIncluded": true}
+    },
+    {
+      "id": "preference/raw-newline-omission-counter-vector",
+      "accepted": true,
+      "coverage": ["exact-raw-bytes"],
+      "input": {"bytesUtf8": "{\"schemaVersion\":1,\"revision\":\"1\",\"modelId\":\"qwen2.5-0.5b-instruct-q4-k-m\",\"origin\":\"manual\",\"updatedAt\":\"2026-08-23T12:34:56Z\"}", "terminalLfIncluded": false},
+      "expected": {"byteSize": 128, "sha256": "0e9432efa89391020481022d8b87c8568077f4da88d1ec1fb7da4afa53a6a3f4", "differsFromPersistedVector": true}
+    },
+    {
+      "id": "preference/raw-source-manifest-digest",
+      "accepted": true,
+      "coverage": ["source-manifest-digest"],
+      "input": {"bytesFile": "bytes/migration-source-manifest-v1.json", "hashMode": "exact-complete-bytes"},
+      "expected": {"byteSize": 1220, "sha256": "89b816e17e146d0d6130fb29a26db3f4f6aa3368524d49358266215dc305aa10"}
+    },
+    {
+      "id": "preference/revision-and-counter-transaction",
+      "accepted": true,
+      "coverage": ["preference-counter-transaction", "revision-arbitrary-precision"],
+      "input": {"retainedPreferenceCounter": "99999999999999999999999999999999999999", "nextPreferenceRevision": "100000000000000000000000000000000000000", "writeSequence": ["freeze-exact-bytes-in-receipt", "replace-and-fsync-preference", "replace-and-fsync-manager-state-counter"]},
+      "expected": {"managerReadyAfterPreferenceFsyncFailure": false, "retryUsesFrozenBytes": true, "managerRevisionIncrementsForCounterReplacement": true}
+    },
+    {
+      "id": "preference/selected-deletion-fallback",
+      "accepted": true,
+      "coverage": ["selected-deletion"],
+      "input": {"selectedModelId": "qwen2.5-1.5b-instruct-q4-k-m", "targetPublicationId": "fedcba9876543210fedcba9876543210", "fallbackModelId": "qwen2.5-0.5b-instruct-q4-k-m", "fallbackPublicationId": "0123456789abcdef0123456789abcdef", "fallbackLoadable": true},
+      "expected": {"beforeDelete": ["switch-to-fallback", "persist-fallback-preference", "verify-target-unselected-and-unleased"], "deleteTarget": true}
+    },
+    {
+      "id": "preference/unknown-field-rejected",
+      "accepted": false,
+      "coverage": ["unknown-fields"],
+      "input": {"document": {"schemaVersion": 1, "revision": "1", "modelId": "qwen2.5-0.5b-instruct-q4-k-m", "origin": "manual", "updatedAt": "2026-08-23T12:34:56Z", "selected": true}},
+      "expected": {"result": "rejected", "reason": "closed-schema-unknown-field"}
+    }
+  ]
+}

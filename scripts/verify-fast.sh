@@ -24,6 +24,9 @@ pocketlm_check_app_toolchain "$REPOSITORY_ROOT"
 pocketlm_check_ruby_toolchain
 pocketlm_check_submodule "$REPOSITORY_ROOT"
 
+echo "==> Expansion Gate 0 contract fixtures"
+ruby "${SCRIPT_DIR}/tests/expansion_contract_fixtures_test.rb"
+
 echo "==> Installing the frozen JavaScript dependency graph"
 (
     cd "${REPOSITORY_ROOT}/app"

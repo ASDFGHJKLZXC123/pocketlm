@@ -1,0 +1,111 @@
+{
+  "fixtureSet": "expansion-gate-0/fixture-set-v1",
+  "family": "gguf",
+  "cases": [
+    {
+      "id": "gguf/bad-magic-and-version",
+      "accepted": false,
+      "coverage": ["bad-magic-version", "error-mapping"],
+      "input": {"acceptedWireVersions": [3], "variants": [{"magicAscii": "GGUX", "version": 3}, {"magicAscii": "GGUF", "version": 1}, {"magicAscii": "GGUF", "version": 2}, {"magicAscii": "GGUF", "version": 4}]},
+      "expected": {"parserResults": ["PLM_GGUF_BAD_MAGIC", "PLM_GGUF_UNSUPPORTED_VERSION", "PLM_GGUF_UNSUPPORTED_VERSION", "PLM_GGUF_UNSUPPORTED_VERSION"], "managerErrorCode": "GGUF_INVALID", "metadataInterpretedForUnsupportedVersion": false, "factsZeroed": true}
+    },
+    {
+      "id": "gguf/buffer-too-small",
+      "accepted": false,
+      "coverage": ["buffer-sizing"],
+      "input": {"validGguf": "minimal", "templateBytes": 2509, "chatTemplateBuffer": "non-null", "chatTemplateCapacity": 2509},
+      "expected": {"parserResult": "PLM_GGUF_BUFFER_TOO_SMALL", "requiredChatTemplateCapacity": 2510, "partialTemplateBytes": 0, "trustedFactsReturned": false, "otherOutputsZeroed": true}
+    },
+    {
+      "id": "gguf/catalog-expectation-matrix",
+      "accepted": false,
+      "coverage": ["expectation-mismatch"],
+      "input": {"trustedParserFacts": {"ggufVersion": 3, "architecture": "qwen2", "fileType": 15, "tokenizerModel": "gpt2", "tokenizerPre": "qwen2", "chatTemplateBytes": 2509, "chatTemplateSha256": "d5495a1e5db0611132a97e46a65dbb64a642a499421228b9c8b93229097fa9a4", "chatTemplateContains": ["<|im_start|>", "<|im_end|>", "add_generation_prompt"]}, "variants": ["gguf-version", "architecture-byte-exact", "file-type", "tokenizer-model", "tokenizer-pre", "template-size", "template-sha256", "template-required-fragment"]},
+      "expected": {"allPlatformComparisons": "METADATA_MISMATCH", "parserResult": "PLM_GGUF_OK", "catalogDriftUsed": false}
+    },
+    {
+      "id": "gguf/count-limits-and-overflow",
+      "accepted": true,
+      "coverage": ["count-bounds", "overflow"],
+      "input": {"boundaries": [{"field": "tensorCount", "accepted": 10000000, "rejected": 10000001}, {"field": "metadataCount", "accepted": 65536, "rejected": 65537}, {"field": "arrayElementCount", "accepted": 5000000, "rejected": 5000001}], "overflowRecipes": ["length-plus-offset-overflows-uint64", "element-count-times-width-overflows-uint64", "seek-past-file-size"]},
+      "expected": {"capPlusOneResult": "PLM_GGUF_COUNT_LIMIT", "overflowResult": "PLM_GGUF_OVERFLOW", "managerErrorCode": "GGUF_BOUNDS"}
+    },
+    {
+      "id": "gguf/duplicate-key",
+      "accepted": false,
+      "coverage": ["duplicate-key", "error-mapping"],
+      "input": {"metadataKeys": ["general.architecture", "general.architecture"], "values": ["qwen2", "qwen2"]},
+      "expected": {"parserResult": "PLM_GGUF_DUPLICATE_KEY", "managerErrorCode": "GGUF_INVALID", "factsZeroed": true}
+    },
+    {
+      "id": "gguf/empty-template-parses-but-mismatches",
+      "accepted": false,
+      "coverage": ["empty-template-mismatch"],
+      "input": {"metadata": {"general.architecture": "qwen2", "general.file_type": 15, "tokenizer.ggml.model": "gpt2", "tokenizer.ggml.pre": "qwen2", "tokenizer.chat_template": ""}, "templateCapacity": 1},
+      "expected": {"parserResult": "PLM_GGUF_OK", "chatTemplateLength": 0, "requiredChatTemplateCapacity": 1, "platformComparison": "METADATA_MISMATCH"}
+    },
+    {
+      "id": "gguf/error-code-mapping",
+      "accepted": true,
+      "coverage": ["error-mapping"],
+      "input": {"parserGroups": {"GGUF_INVALID": ["PLM_GGUF_BAD_MAGIC", "PLM_GGUF_UNSUPPORTED_VERSION", "PLM_GGUF_TRUNCATED", "PLM_GGUF_CORRUPT", "PLM_GGUF_DUPLICATE_KEY", "PLM_GGUF_MISSING_FIELD", "PLM_GGUF_WRONG_TYPE", "PLM_GGUF_INVALID_UTF8"], "GGUF_BOUNDS": ["PLM_GGUF_COUNT_LIMIT", "PLM_GGUF_OVERFLOW", "PLM_GGUF_FIELD_TOO_LARGE"], "STORAGE_IO": ["PLM_GGUF_IO"], "PATH_REJECTED": ["PLM_GGUF_NOT_REGULAR"], "INTERNAL": ["PLM_GGUF_INVALID_ARGUMENT", "PLM_GGUF_BUFFER_TOO_SMALL", "PLM_GGUF_INTERNAL"]}, "catalogComparison": "METADATA_MISMATCH"},
+      "expected": {"mappingIsExhaustive": true, "diagnosticTextControlsFlow": false}
+    },
+    {
+      "id": "gguf/exact-field-caps",
+      "accepted": true,
+      "coverage": ["field-caps"],
+      "input": {"boundaries": [{"field": "metadataKeyBytes", "accepted": 65536, "rejected": 65537}, {"field": "architectureBytes", "accepted": 63, "rejected": 64}, {"field": "tokenizerModelBytes", "accepted": 63, "rejected": 64}, {"field": "tokenizerPreBytes", "accepted": 63, "rejected": 64}, {"field": "chatTemplateBytes", "accepted": 1048576, "rejected": 1048577}]},
+      "expected": {"capResult": "PLM_GGUF_OK", "capPlusOneResult": "PLM_GGUF_FIELD_TOO_LARGE", "maximumTemplateAllocation": 1048577}
+    },
+    {
+      "id": "gguf/invalid-utf8",
+      "accepted": false,
+      "coverage": ["invalid-utf8"],
+      "input": {"field": "tokenizer.chat_template", "bytesHex": "c328"},
+      "expected": {"parserResult": "PLM_GGUF_INVALID_UTF8", "managerErrorCode": "GGUF_INVALID", "factsZeroed": true}
+    },
+    {
+      "id": "gguf/missing-and-wrong-type",
+      "accepted": false,
+      "coverage": ["missing-wrong-type"],
+      "input": {"variants": [{"omit": "general.architecture"}, {"field": "general.file_type", "wireType": "STRING", "value": "15"}]},
+      "expected": {"parserResults": ["PLM_GGUF_MISSING_FIELD", "PLM_GGUF_WRONG_TYPE"], "managerErrorCode": "GGUF_INVALID"}
+    },
+    {
+      "id": "gguf/sizing-request",
+      "accepted": true,
+      "coverage": ["buffer-sizing", "template-nul"],
+      "input": {"validGguf": "qwen2.5-template", "chatTemplateBuffer": null, "chatTemplateCapacity": 0},
+      "expected": {"parserResult": "PLM_GGUF_OK", "trustedFactsReturned": true, "chatTemplateLength": 2509, "requiredChatTemplateCapacity": 2510, "templateBytesWritten": 0}
+    },
+    {
+      "id": "gguf/truncation-at-every-field",
+      "accepted": false,
+      "coverage": ["truncation"],
+      "input": {"truncateAfterEveryByteOf": ["header", "metadata-key-length", "metadata-key", "metadata-type", "metadata-value", "tensor-info", "alignment-padding"], "completeFileSize": 256},
+      "expected": {"everyStrictPrefixResult": "PLM_GGUF_TRUNCATED", "managerErrorCode": "GGUF_INVALID", "outOfBoundsRead": false}
+    },
+    {
+      "id": "gguf/valid-0.5b-facts",
+      "accepted": true,
+      "coverage": ["no-inference-construction", "valid-0.5b"],
+      "input": {"artifact": {"byteSize": 491400032, "sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db"}, "gguf": {"version": 3, "tensorCount": 291, "metadataCount": 26, "architecture": "qwen2", "fileType": 15, "tokenizerModel": "gpt2", "tokenizerPre": "qwen2", "chatTemplateBytes": 2509, "chatTemplateSha256": "d5495a1e5db0611132a97e46a65dbb64a642a499421228b9c8b93229097fa9a4"}, "backendSessionConstructionCountBefore": 0},
+      "expected": {"parserResult": "PLM_GGUF_OK", "platformComparison": "match", "backendSessionConstructionCountAfter": 0}
+    },
+    {
+      "id": "gguf/valid-1.5b-facts",
+      "accepted": true,
+      "coverage": ["valid-1.5b"],
+      "input": {"artifact": {"byteSize": 1117320736, "sha256": "6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e"}, "gguf": {"version": 3, "tensorCount": 339, "metadataCount": 26, "parameterCount": 1777088000, "alignment": 32, "dataOffset": 5950496, "architecture": "qwen2", "fileType": 15, "tokenizerModel": "gpt2", "tokenizerPre": "qwen2", "chatTemplateBytes": 2509, "chatTemplateSha256": "d5495a1e5db0611132a97e46a65dbb64a642a499421228b9c8b93229097fa9a4"}},
+      "expected": {"parserResult": "PLM_GGUF_OK", "platformComparison": "match"}
+    },
+    {
+      "id": "gguf/valid-minimal-payload-and-nul",
+      "accepted": true,
+      "coverage": ["template-nul", "valid-minimal"],
+      "input": {"metadata": {"general.architecture": "qwen2", "general.file_type": 15, "tokenizer.ggml.model": "gpt2", "tokenizer.ggml.pre": "qwen2", "tokenizer.chat_template": "x"}, "chatTemplateCapacity": 2},
+      "expected": {"parserResult": "PLM_GGUF_OK", "chatTemplateLength": 1, "requiredChatTemplateCapacity": 2, "writtenBytesHex": "7800", "fixedStringsNulTerminated": true}
+    }
+  ]
+}
