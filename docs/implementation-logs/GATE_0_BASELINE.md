@@ -1,8 +1,9 @@
 # Expansion Gate 0 baseline
 
-Status: active capture; G0-A tooling implementation accepted, G0-A and Gate 0
-remain open.
-Date: 2026-08-07.
+Status: active capture; G0-A tooling and macOS prerequisite evidence accepted;
+G0-A and Gate 0 remain open.
+Original evidence date: 2026-08-07.
+Updated: 2026-08-23.
 Repository basis: `6f9de4a33d08a11ec37258b0d2cab1acab5f61a4`.
 Documentation preservation: `3425a50c20f758702316b2c0cb831240ffbdde44`.
 G0-A implementation: `2975d61d13903dd3cb5ee8518034427fe9d345be`.
@@ -14,6 +15,8 @@ add iOS or Android expansion behavior.
 
 Detailed G0-A workspace, commit-chain, toolchain, and acceptance evidence is in
 `docs/implementation-logs/GATE_0A_REPRODUCIBLE_WORKSPACE.md`.
+The current consolidation and platform refresh is in
+`docs/implementation-logs/GATE_0_CONSOLIDATION_2026-08-23.md`.
 
 ## Repository state
 
@@ -21,9 +24,9 @@ Detailed G0-A workspace, commit-chain, toolchain, and acceptance evidence is in
 | --- | --- |
 | Approved base | `main` and `origin/main` at `6f9de4a33d08a11ec37258b0d2cab1acab5f61a4` |
 | Documentation preservation | Commit `3425a50c20f758702316b2c0cb831240ffbdde44`, sole parent the approved base, adds exactly nine Gate 0 documents |
-| G0-A branch | `codex/expansion-g0a` at `2975d61d13903dd3cb5ee8518034427fe9d345be` |
-| G0-A worktree | `/Users/f8fq/coding/PocketLM-G0A`; no-space predicate passed; clean before and after commit-based acceptance |
-| Original checkout | Remains on `main` at the approved base with the same nine documents untracked and unmodified |
+| G0-A branch | `codex/expansion-g0a` at accepted evidence commit `d6bdeb61f18a2f3651f96f4c7266016383b40d09` |
+| G0-A worktree | Historical acceptance path `/Users/f8fq/coding/PocketLM-G0A`; no-space predicate passed in the recorded run, but the path is now absent and its metadata prunable |
+| Consolidation checkout | `codex/gate-0-consolidation`, created directly from `d6bdeb6`; the original nine untracked blobs were reverified against `3425a50` and stashed recoverably before switching |
 | llama.cpp submodule | `45cac7ca703fb9085eae62b9121fca01d20177f6`, clean and exact |
 | Original checkout path | `/Users/f8fq/coding projects/Unfinished/PocketLM`; still rejected for release evidence because it contains spaces |
 | G0-A release-path status | PASS: `verify-release.sh ios` accepted the no-space worktree and ended with a clean result |
@@ -34,7 +37,7 @@ Detailed G0-A workspace, commit-chain, toolchain, and acceptance evidence is in
 | Item | Observed | Status |
 | --- | --- | --- |
 | Host | macOS 26.4.1, arm64, 16 GiB RAM, 8 logical / 4 performance cores | Recorded |
-| Free disk | iOS preflight: 10,647,340 KiB; after accepted run: 9,707,104 KiB, observed 2026-08-07 21:45 PDT | The release lane passed its 8 GiB floor; Android SDK/NDK/image headroom remains inadequate and unproven |
+| Free disk | 55,615,884 KiB (53.04 GiB), observed 2026-08-23 11:24 PDT | PASS: above the 40 GiB Android safety floor and 50 GiB preference; the 2026-08-07 post-iOS value was 9,707,104 KiB |
 | Default Node | 25.9.0 | Does not match repository pin |
 | Pinned Node | `/Users/f8fq/.nvm/versions/node/v22.23.1/bin/node` | Exact and usable |
 | Default pnpm | 10.33.0 | Does not match repository pin |
@@ -59,11 +62,11 @@ reproducible.
 | Native Release | PASS | Same whole-verifier run completed the fresh Release compile and both bounded qualification timeout self-tests |
 | Native TSan | PASS | Targeted `verify-native.sh tsan` lane: 22/22 concurrency tests, no ThreadSanitizer failure |
 | Bridge harness | PASS | Objective-C++ bridge harness and its sanitized lane both reported `RESULT PASS` |
-| Model-backed 0.5B | PARTIAL PASS | Exact SHA/GGUF authentication passed; native model load/generation test runs after the native baseline |
+| Model-backed 0.5B | PASS | Exact SHA/GGUF authentication and 1/1 required native load/generation test passed with no skip or failure; Simulator policy retained compiled Metal support while forcing inference to CPU |
 | Clean iOS Simulator release | PASS | `verify-release.sh ios` on clean commit `2975d61`: locked Bundler/CocoaPods inputs, fresh DerivedData, generic arm64 Simulator build across 115 targets, app validation, and final clean-result guard |
 | iOS XCTest | PENDING | The release verifier builds the app but does not prove the manually represented XCTest target survives clean prebuild |
 | iOS device SDK | PENDING | No isolated `iphoneos-arm64` package/build evidence yet |
-| Android build | BLOCKED | No generated Android project, wrapper, NDK, API-36 platform, or runnable device lane |
+| Android build | BLOCKED | Local API-36/NDK/CMake/arm64 prerequisites are installed, but no generated Android project, Gradle wrapper, deterministic prebuild, running emulator, Linux/KVM x86_64 lane, or physical-device evidence exists |
 
 The deliberate SHA mismatch printed by the provisioning fixture is a negative
 test and the enclosing fixture suite passed.
@@ -83,7 +86,7 @@ result with whole-verifier evidence.
 | Model authentication | PASS: SHA-256 `74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db`; GGUF v3, 291 tensors, 26 metadata entries |
 | 0.5B chat template | 2,509 UTF-8 bytes; SHA-256 `d5495a1e5db0611132a97e46a65dbb64a642a499421228b9c8b93229097fa9a4` |
 | 0.5B license | Apache License 2.0 bytes at the pinned revision: 11,343 bytes; SHA-256 `832dd9e00a68dd83b3c3fb9f5588dad7dcf337a0db50f7d9483f310cd292e92e` |
-| Model-backed status | Native load/generation test pending in this log |
+| Model-backed status | PASS on 2026-08-23: 1/1 required CTest passed with no skip or failure; mandatory Simulator backend policy check also passed |
 | 1.5B source identity | Official Qwen repository, revision `91cad51170dc346986eccefdc2dd33a9da36ead9` |
 | 1.5B remote object | 1,117,320,736 bytes; SHA-256 `6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e` |
 | 1.5B license | Apache License 2.0 bytes at the pinned revision: 11,343 bytes; SHA-256 `832dd9e00a68dd83b3c3fb9f5588dad7dcf337a0db50f7d9483f310cd292e92e` |
@@ -115,38 +118,44 @@ Gate 1 must isolate SDK outputs and create the test target/scheme idempotently.
   package/application ID/app namespace to `com.pocketlm.app`, separately from
   native-library namespace `com.pocketlm.nativebridge` and the preserved codegen
   Java package `com.pocketlm`.
-- Installed inventory is build-tools 34.0.0/36.0.0/36.1.0, command-line tools
-  20.0, emulator 36.5.11, platform-tools 37.0.0, platforms android-34 r3 and
-  android-36.1 r1, and Android 36.1 Google APIs arm64 image r4. The local AVD is
-  `clipsync_api_36_1`.
-- Selected remote revisions are provisionally `platforms;android-36` r2, NDK
-  `28.2.13676358`, SDK-side `cmake;3.31.6`, and the four assigned-host API-36
-  normal/16 KiB image variants at revision 7. They are absent and must be
-  resolved again with command-line tools 22 before becoming trusted pins.
+- A functional command-line tools 22.0 directory is available explicitly
+  alongside the generic `latest` path, which still selects 20.0. The explicit
+  directory is not registered as an installed SDK package. Gate evidence names
+  the deterministic 22.0 path; its inventory command does not emit the old XML
+  schema warning. The `latest` alias is a non-blocking host caveat.
+- The local macOS arm64 gate pins are installed: build-tools 36.0.0,
+  `platforms;android-36` revision 2, NDK `28.2.13676358` (r28c), SDK CMake
+  3.31.6, API-36 Google APIs arm64 image revision 7, and API-36 Google APIs
+  16 KiB arm64 image revision 7.
+- `PocketLM_API36_arm64` and `PocketLM_API36_ps16k_arm64` are configured against
+  those images. Neither AVD was booted for this capture, so runtime ABI, page
+  size, app install, and native execution remain unproved.
 - No Android emulator or physical device is attached.
-- Installed command-line tools 20 report an XML schema-version warning while
-  the advertised current package is 22. The tools must be updated before remote
-  package resolution is trusted.
+- The assigned Linux/KVM normal and 16 KiB x86_64 image revision-7 lanes remain
+  unevidenced on this host.
 - Expo CLI's default SDK-55 template selector is mutable. Gate 1 must invoke
   clean prebuild with the verified `expo-template-bare-minimum@55.0.27` tarball;
   that template contains Gradle 9.0.0, so the pinned Gradle 8.13 wrapper and the
   r28c/CMake/API overrides must be deterministically reapplied and checked after
   both clean generations.
 
-The local arm64 AVD is not a substitute for the deterministic x86_64 KVM lane,
-physical arm64 feature proof, or a verified 16 KiB environment.
+The local arm64 AVD definitions are not substitutes for the deterministic
+x86_64 KVM lane, physical arm64 feature proof, or verified runtime page-size
+evidence.
 
 ## Blocking conditions
 
 1. Completed in G0-A: preserve the nine Gate 0 documents and create a clean,
    no-space implementation worktree without changing the original checkout.
-2. Satisfy the project safety policy of at least 40 GiB local headroom before
-   installing the Android NDK and macOS arm64 system-image lanes.
-3. Install and record the exact Android packages from the orchestration packet.
+2. Completed on this host: current free space exceeds the 40 GiB safety floor,
+   and the exact macOS arm64 Android packages and AVD definitions are recorded.
+3. Use the deterministic explicit command-line tools 22 entry point; record the
+   assigned Linux/KVM x86_64 packages and deterministic Android prebuild/runtime
+   lanes.
 4. Connect or supply facts for one Android arm64 phone and one iOS 17+ iPhone.
-5. Complete the exact model-backed native lane, clean iOS XCTest/device-SDK
-   lanes, and Android platform lanes. Native all, TSan, and clean iOS Simulator
-   release evidence are complete.
+5. Complete the clean iOS XCTest/device-SDK lanes and Android platform lanes.
+   Native all, TSan, exact model-backed, and clean iOS Simulator release evidence
+   are complete.
 6. Accept and fixture the Gate 0 contracts.
 
 These are Gate 0 constraints, not failures introduced by expansion code.

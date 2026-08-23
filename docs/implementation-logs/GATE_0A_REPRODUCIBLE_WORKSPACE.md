@@ -1,10 +1,11 @@
 # Gate 0A reproducible workspace evidence
 
-Status: tooling implementation accepted; clean fast and iOS Simulator release
-lanes pass; G0-A remains open for Android capacity and trusted assigned-host
-package-resolution evidence.
+Status: tooling, clean fast/iOS Simulator release, current local capacity, and
+macOS arm64 Android package evidence accepted; G0-A remains open for the
+assigned Linux/KVM lane.
 
-Date: 2026-08-07.
+Original evidence date: 2026-08-07.
+Updated: 2026-08-23.
 
 ## Immutable Git chain
 
@@ -13,11 +14,17 @@ Date: 2026-08-07.
 | Approved code basis | `6f9de4a33d08a11ec37258b0d2cab1acab5f61a4` | `main` and `origin/main` were aligned before preservation |
 | Gate 0 documentation preservation | `3425a50c20f758702316b2c0cb831240ffbdde44` | Sole parent is the approved basis; exactly nine documents were added |
 | G0-A implementation | `2975d61d13903dd3cb5ee8518034427fe9d345be` | Sole parent is the preservation commit; exactly six approved files changed |
+| G0-A acceptance evidence | `d6bdeb61f18a2f3651f96f4c7266016383b40d09` | Sole parent is the implementation commit; records the accepted clean lanes |
 
-The original checkout remains at
+Through the 2026-08-07 acceptance, the original checkout remained at
 `/Users/f8fq/coding projects/Unfinished/PocketLM` on `main` at the approved
-basis. Its nine source documents remain untracked and byte-identical; it was not
-stashed, cleaned, switched, moved, or rewritten.
+basis. Its nine source documents remained untracked and byte-identical; it was
+not stashed, cleaned, switched, moved, or rewritten during that acceptance.
+
+On 2026-08-23 those nine blobs were rechecked against `3425a50`, preserved in a
+recoverable stash, and the checkout moved to `codex/gate-0-consolidation` from
+`d6bdeb6` without rewriting the accepted chain. Current evidence is recorded in
+`GATE_0_CONSOLIDATION_2026-08-23.md`.
 
 The preservation commit contains these exact source-byte SHA-256 values:
 
@@ -33,7 +40,7 @@ The preservation commit contains these exact source-byte SHA-256 values:
 | `docs/implementation-logs/GATE_0_ORCHESTRATION.md` | `bd888378f297bac653350a8cf9ef281a027bd71fc2f9b2ae640d2e59608e2610` |
 | `docs/implementation-logs/GATE_0_INDEPENDENT_REVIEW.md` | `302a6f6e6dd385c28301c3c303a6558d666312f5374548c959dd9935416c3df3` |
 
-## No-space acceptance worktree
+## No-space acceptance worktree (2026-08-07)
 
 | Check | Result |
 | --- | --- |
@@ -48,6 +55,10 @@ Generated Pods, `node_modules`, CMake trees, and DerivedData from the original
 space-containing checkout were not copied into this worktree. Dependencies and
 native outputs used for acceptance were regenerated under the new physical
 root.
+
+The no-space acceptance worktree path was absent and its Git metadata was
+prunable at the 2026-08-23 consolidation. This does not invalidate its recorded
+clean-commit results, but it is not a current execution workspace.
 
 ## G0-A implementation scope
 
@@ -111,7 +122,8 @@ ended with `verify-release ios passed with a clean result`.
 
 ## Capacity and open work
 
-After iOS acceptance and temporary DerivedData cleanup, 9,707,104 KiB was free
+After the 2026-08-07 iOS acceptance and temporary DerivedData cleanup,
+9,707,104 KiB was free
 on the data volume at 2026-08-07 21:45 PDT. This is not adequate proof for the
 local Android platform, NDK, CMake, arm64 image/AVD, model staging, and build
 outputs. The project safety policy holds local Android installation until at
@@ -122,20 +134,31 @@ Image capacity and installation are host-scoped. The macOS arm64 lane owns the
 normal arm64 image and, if locally available, the arm64 16 KiB image. The
 normal and 16 KiB x86_64 images belong on the Linux/KVM lane. Physical arm64
 feature and page-size evidence belongs on the enrolled phone. Installed
-command-line tools 20 currently emit an XML-schema warning, so the provisional
-remote revision selections must be repeated with command-line tools 22 before
-they are trusted.
+command-line tools 20 emitted an XML-schema warning, so the provisional remote
+revision selections required a repeat with command-line tools 22 before they
+could be trusted.
+
+The 2026-08-23 refresh recorded 55,615,884 KiB (53.04 GiB) free, explicit
+command-line tools 22.0 inventory, API-36 platform revision 2, NDK r28c, SDK
+CMake 3.31.6, normal arm64 image revision 7, 16 KiB arm64 image revision 7, and
+both corresponding PocketLM AVD definitions. It also recorded passing current
+fast, native Debug/ASan, bridge, Release, TSan, and exact 0.5B model-backed
+lanes. Gate evidence uses the deterministic explicit 22.0 path; the generic
+`cmdline-tools/latest` path still selects 20.0 as a non-blocking host caveat.
+Neither AVD has runtime evidence, and the assigned Linux/KVM x86_64 lanes remain
+open.
 
 The following are intentionally still open:
 
-- exact cached 0.5B native model load/generation verification;
 - iOS XCTest durability through two clean prebuilds;
 - isolated `iphoneos-arm64` compile/link and physical-iPhone evidence;
-- required Android SDK, NDK, CMake, and assigned-host normal/16 KiB images;
+- assigned Linux/KVM normal/16 KiB x86_64 image evidence;
 - deterministic Android prebuild and emulator lanes;
 - physical Android phone evidence; and
 - golden contract fixtures and final Gate 0 closure review.
 
 The accepted G0-A tooling resolves the reproducible-workspace and local
-entry-point problem. G0-A remains open for its Android capacity/package evidence
-and does not authorize Gate 1 feature implementation while Gate 0 is open.
+entry-point problem. The current refresh also resolves local capacity and the
+macOS arm64 package-install sub-lane. G0-A remains open for its assigned
+Linux/KVM evidence, and it does not authorize Gate 1 feature implementation
+while Gate 0 is open.

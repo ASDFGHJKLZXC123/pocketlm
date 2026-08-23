@@ -4,6 +4,7 @@ Status: normative draft. Sections not explicitly marked open are frozen for
 task-packet design; no schema activation or runtime implementation is authorized
 until the Gate 0 exit review accepts the fixtures.
 Date: 2026-08-07.
+Open-evidence updated: 2026-08-23.
 Protocol basis: Inference Event Protocol v2 and C ABI `0x00020100`.
 
 ## Version map
@@ -1068,8 +1069,10 @@ state, and shared snapshot enums must never be changed concurrently.
 The following prevent this document from becoming an accepted freeze:
 
 - exact attached Android and iOS hardware facts;
-- installation evidence for SDK CMake `3.31.6`, API-36 Google APIs image
-  revision 7, and API-36 Google APIs 16 KiB image revision 7;
+- assigned Linux/KVM installation evidence for the API-36 Google APIs x86_64
+  image revision 7 and API-36 Google APIs 16 KiB x86_64 image revision 7;
+  macOS arm64 CMake `3.31.6` and both arm64 image revisions were recorded on
+  2026-08-23;
 - full local inspection of the pinned 1.5B GGUF facts and chat-template bytes;
 - a passing one-model catalog-v2 fixture containing the independently extracted
   0.5B template size/hash above;
