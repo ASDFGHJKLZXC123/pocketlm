@@ -1,8 +1,13 @@
 # PocketLM iOS + Android expansion — consolidated implementation plan
 
-Status: approved for Gate 0 orchestration. No expansion feature implementation
-has started.
-Plan date: 2026-08-07. Repository basis: `6f9de4a`.
+Status: revised for Gate 0 orchestration; Claude Opus 5.5 planning review
+accepted with nonblocking notes, incorporated/carried into scoped packets;
+fresh independent verification accepted. Gate 0B is accepted, but overall
+Gate 0 remains open. No expansion feature implementation
+or production schema activation has started.
+Plan date: 2026-08-07. Revised: 2026-10-03.
+Original repository basis: `6f9de4a`. Revision checkpoint: `8e6c4ad` on
+`codex/gate-0b-contract-fixtures`.
 
 This plan consolidates and sequences:
 
@@ -20,17 +25,22 @@ Build both platforms as one program: a shared catalog, storage, runtime-policy,
 verification, and model-management foundation followed by native Android and iOS
 lanes. Do not build two independent model-management stacks.
 
-The implementation-agent allowlist is GPT-5.6-series models plus
-`gpt-5.3-codex-spark`. It is not a PocketLM runtime-model restriction. PocketLM
-continues to run catalog-pinned GGUF models locally; replacing those with hosted
-GPT models would be a separate product and architecture.
+The inherited `../AGENTS.md` governs the implementation workflow: Claude Code
+implements code, the lead integrates, and a fresh independent verifier checks
+each changed implementation. The former GPT-5.6/Spark-only implementation
+allowlist is superseded by that workflow, not applied to Claude. For this plan
+revision the user specifically requests a Claude CLI review with
+`claude-opus-5-5`; do not silently substitute another model. These are build-agent
+assignments, not PocketLM runtime-model restrictions. PocketLM continues to run
+catalog-pinned GGUF models locally.
 
 Recommended v1.1 product scope:
 
 - Qwen2.5 Instruct 0.5B and 1.5B Q4_K_M, both fully pinned and Apache-2.0;
 - per-device advisory recommendation and user override;
 - model-specific context and thread defaults;
-- host seeding retained as a development/recovery route;
+- host byte seeding retained for development-build recovery/testing, not as a
+  shipped release import route;
 - in-app, resumable, verified installation on iOS and Android;
 - Android arm64 CPU inference, with x86_64 used only for CI/emulator coverage;
 - iOS recommendation accuracy remains advisory even when device-tested; and
@@ -67,9 +77,18 @@ be recorded in an implementation ADR before their dependent work merges.
 
 If no physical iPhone is available, label the iOS result "Simulator-qualified
 experimental beta" rather than treating background-transfer behavior as fully
-validated.
+validated. Taking that fallback requires an explicit user-approved scope-down
+ADR and revised hardware checklist; it is not automatic Gate 0 acceptance.
+No such scope change is authorized by this revision, so the current physical
+iPhone enrollment requirement remains in force.
 
 ## Current baseline
+
+Current checkpoint (2026-10-03): Gate 0B was accepted at `8e6c4ad` with 173
+contract cases across 10 families and 30 indexed files. Those fixtures are test
+definitions, not production multi-language or device conformance. The dated
+August acceptance logs remain historical evidence; the active remaining-work
+list is `docs/implementation-logs/GATE_0_ORCHESTRATION.md`.
 
 - The app is explicitly iOS-only in `app/app.config.ts`; there is no Android
   project, Android bridge, Android CI, or Android model collector.
@@ -92,6 +111,15 @@ validated.
 - The current checkout path contains spaces, while the iOS release verifier
   rejects such a path. Implementation worktrees must live under a no-space
   parent before release verification begins.
+- The accepted no-space G0-A worktree is now absent/prunable. The 2026-10-03
+  disk snapshot is 12,770,476 KiB (12.18 GiB), above the current iOS verifier's
+  default 8 GiB threshold but below the Android 40 GiB safety floor / 50 GiB
+  preference. Recreate an isolated no-space worktree and recheck capacity before
+  dispatch; no cleanup or build is authorized by this documentation revision.
+- Gate 1 includes Android generation and uses the 40 GiB floor / 50 GiB
+  preference on each assigned Android build runner. A separately assigned iOS
+  lane may use its verifier's 8 GiB minimum, but that does not satisfy Android
+  readiness or close the joint foundation gate on this host.
 
 ## Target architecture
 
@@ -127,12 +155,22 @@ do not expand the frozen inference module unnecessarily.
 
 ### Gate 0 — baseline, scope, and contract freeze (4–7 days)
 
-Active control artifacts:
+Normative controls:
 
 - `docs/implementation-logs/GATE_0_ORCHESTRATION.md`;
-- `docs/implementation-logs/GATE_0_BASELINE.md`; and
-- `docs/contracts/EXPANSION_GATE_0_CONTRACTS.md`; and
-- `docs/implementation-logs/GATE_0_INDEPENDENT_REVIEW.md`.
+- `docs/contracts/EXPANSION_GATE_0_CONTRACTS.md`;
+- `docs/contracts/EXPANSION_GATE_0_DECISIONS.md`; and
+- `docs/contracts/INFERENCE_PROTOCOL_V2.md` (Protocol 2.1 amendment).
+
+Historical acceptance and current checkpoint evidence:
+
+- `docs/implementation-logs/GATE_0_BASELINE.md`;
+- `docs/implementation-logs/GATE_0A_REPRODUCIBLE_WORKSPACE.md`;
+- `docs/implementation-logs/GATE_0_CONSOLIDATION_2026-08-23.md`;
+- `docs/implementation-logs/GATE_0B_CONTRACT_FIXTURES_2026-08-23.md`;
+- `docs/implementation-logs/GATE_0_INDEPENDENT_REVIEW.md`; and
+- `docs/implementation-logs/plan-revision/2026-10-03-lead-plan-reconciliation.md`
+  plus its Claude and independent-verifier review records.
 
 Deliverables:
 
@@ -153,8 +191,11 @@ Deliverables:
 - define native module APIs for probe and model management, including stable
   error/state enums;
 - record the protocol amendment and ABI-versioning rules;
-- preflight exact worker availability for the user-provided
-  `gpt-5.3-codex-spark` selector without substituting `gpt-5.3-codex`; and
+- name the development seeding route: a compiled dev/test-only transport seam
+  for the existing `startInstall` flow, owned by Gates 4A/4C; host scripts deliver
+  bytes only. It adds no public manager method, schema, receipt, or inference ABI;
+- preflight the implementation/review assignments under the inherited workflow
+  without silently substituting an unavailable requested model; and
 - choose the iOS Simulator/device packaging mechanism and make qualification
   profile authority explicit.
 
@@ -162,9 +203,21 @@ Exit gate:
 
 - every baseline result is recorded, with pre-existing failures explicitly
   separated from expansion work;
-- schemas have golden valid/invalid fixtures and ownership/lifetime notes; and
+- schemas have accepted golden valid/invalid fixtures and ownership/lifetime
+  notes (Gate 0B complete);
+- exact Android/iOS hardware facts and assigned Linux/KVM normal/16 KiB API-36
+  x86_64 image revision-7 installation evidence are recorded;
+- a final overall Gate 0 closure review accepts the remaining-work list; and
 - no implementation task is blocked on an unnamed device, version, state, or
   API contract.
+
+Gate 0 freezes inputs and records existing gaps. It does not require the new
+prebuild wrapper, durable XCTest target, or isolated device-SDK lane that Gate 1
+creates. Android emulator/native execution belongs to Gates 3A/4A; final
+physical/background-transfer qualification belongs to Gate 6. These later
+proofs remain mandatory at their owning gates, not prerequisites for creating
+the foundations. Current workspace/capacity/tool availability is a separate
+dispatch preflight, never satisfied permanently by a historical PASS.
 
 ### Gate 1 — packaging and codegen foundation (1.5–2.5 weeks)
 
@@ -172,6 +225,13 @@ This is serialized work with one owner.
 
 Deliverables:
 
+- before foundation code changes, record inherited-workflow applicability and
+  prepare project-local `AGENTS.md` plus `.env.example`/environment inventory:
+  structure, commands, style, tests, security and workflow; enumerate existing
+  `EXPO_PUBLIC_SENTRY_DSN`, `EXPO_PUBLIC_SENTRY_ENV`, and
+  `EXPO_PUBLIC_POCKETLM_RC_COMMIT` without real secrets. This existing-project
+  documentation task does not retrospectively relabel August acceptance or
+  exempt any future code pass from Claude/independent verification;
 - force `BUILD_SHARED_LIBS=OFF` at root CMake and keep all current host/iOS
   suites green;
 - enable explicit position-independent static archives for Android JNI linkage
@@ -192,7 +252,8 @@ Deliverables:
 - add a prebuild-safe generic XCTest target/scheme that runs the existing bridge
   harness wrapper and survives two clean prebuilds; Gate 4B extends this lane
   with probe-specific integration tests rather than recreating it;
-- create homes for the sibling probe and model-manager specs; and
+- create homes for the sibling probe and model-manager specs; Gate 2 owns their
+  shared model-manager definitions before any platform implementation; and
 - add build-time canonical catalog copying/digest checks so JavaScript, Ruby,
   Objective-C++, and Kotlin all consume identity derived from
   `models/catalog.json`.
@@ -212,52 +273,88 @@ Exit gate:
 - native catalog resources are byte/schema checked against the repository
   source of truth.
 
-### Gate 2 — shared multi-model and runtime foundation (2–2.5 weeks)
+### Gate 2 — shared multi-model and runtime preparation (2–2.5 weeks)
 
-Land N-entry readers and migration before activating the second catalog entry.
+Land N-entry/dual readers, definitions, and deterministic tests while the
+production catalog and storage remain schema 1 with the existing 0.5B model.
+Gate 4D, not this gate, owns production activation after native foundations.
 
 Deliverables:
 
-- catalog v2 with uniqueness and safe-path validation for IDs, directories,
-  source filenames, and installed paths;
+- catalog-v2 readers/validation with uniqueness and safe-path checks for IDs,
+  directories, source filenames, and installed paths;
 - immutable per-model installation records plus a separate selected-model
   preference;
-- atomic, idempotent manifest v1→v2 migration preserving the existing 0.5B
-  installation without redownload;
+- migration planning and deterministic journal/crash-prefix tests preserving
+  the existing 0.5B installation without redownload, against fake native
+  authority; no production migration or durable preference mutation yet;
 - deterministic fallback for missing, invalid, deleted, or unknown selections;
-- model-ID addressing in Ruby, fetch, Simulator seed, and Android seed interfaces;
+- model-ID addressing definitions in Ruby/fetch and the future Simulator/Android
+  host-delivery interfaces; Gates 4A/4C own their actual safe seeding routes;
 - pure shared recommendation/runtime-config policy with byte units, caps,
-  boundary vectors, persisted manual override, and safe missing-probe fallback;
-- model/config fingerprinting in inference ownership;
-- a shared switch controller that is a client of the platform-native lease
-  authority, with explicit transitions:
+  boundary vectors, manual-override persistence definitions/tests, and safe
+  missing-probe fallback;
+- one owner for the shared probe/model-manager TurboModule specs and authoritative
+  snapshot/receipt/error definitions, including canonical command identity,
+  durable replay, manager revisions, and quarantine/publication target identity;
+- the Gate 2 Claude implementer as the single shared test-data owner for generated
+  small two-entry catalogs/GGUF recipes
+  under the future `fixtures/expansion-implementation/` location, outside the
+  closed Gate 0B `fixture-set-v1` inventory. Platform test builds use isolated
+  native test-only repository roots; they never reuse production generations or
+  invent production publication IDs. Real-model bytes remain outside Git;
+- model/config fingerprint definitions against fake-authority fixture
+  publications, not production inference ownership. Never manufacture a
+  publication ID for an existing schema-1 installation;
+- a shared switch-controller definition/test adapter that will be a client of
+  platform-native lease authority at Gate 4D, with these tested transitions:
   - idle selection commits `selectedPreference` after a durable verified install
     and leaves `activeFingerprint` null;
-  - active switching stages desired selection/config → cancel → awaited unload →
-    load, then commits both values only after success;
-  - installing an unselected model publishes only its installation record; and
+  - active switching stops admission → cancel/terminal delivery → awaited unload
+    → internal staged load → durable preference/fsync → expose active fingerprint;
+    the staged session accepts no inference before preference durability;
+  - installing an unselected model publishes only its installation record;
   - failed new load keeps the old preference, attempts to reload the old
-    fingerprint, and otherwise enters an explicit unloaded error state; and
+    fingerprint, and otherwise enters an explicit unloaded error state;
+  - preference-write/fsync failure unloads the staged desired session before
+    old-fingerprint recovery; failed staged unload retains its lease/session as
+    a process-global fault blocker rather than allowing inference or mutation;
+  - full React/JavaScript reload enumerates and unloads orphan sessions before
+    mutation readiness; and
 - per-model bench and qualification identity.
 
-Only after those changes are green, add the fully pinned Qwen2.5 1.5B entry.
+All migration, preference, and switch tests in this gate use fake authority.
+They do not prove native exclusion, filesystem durability, or crash repair.
+The accepted Gate 0B contract and corpus are normative; do not introduce a
+second abbreviated state machine in an implementation packet.
 
 Exit gate:
 
-- catalog and manifest golden fixtures agree in every implemented language;
-- migration is idempotent and preserves a real schema-1 fixture;
+- TypeScript/Ruby dual readers and shared spec/snapshot fixtures agree with the
+  accepted corpus, while production defaults remain schema 1;
+- deterministic migration tests are idempotent and preserve an authentic
+  schema-1 fixture; native readers/writers and real migration are later proof;
 - model/context changes cannot leave two app-owned sessions resident at the JS
   policy layer; native/reload-proof exclusion is accepted only at the later
   platform lease gates;
 - failed unload retains old ownership, while failed new load does not publish a
   false `activeFingerprint` and exercises the rollback/error path;
-- the resolved model path, context, accelerator, GPU layers, and thread count
-  reach their correct native calls; and
+- fake-authority adapters receive the correct model path, context, accelerator,
+  GPU layers, and thread count; Gate 4D proves the actual native calls; and
 - all existing iOS and shared suites remain green.
 
 ### Gate 3A — Android native toolchain and CPU packaging (3–5 days)
 
-May overlap Gate 2 after Gate 1's root CMake change lands.
+May overlap Gate 2 after Gate 1 is accepted.
+Record a separately reviewed root-build-configuration sub-checkpoint before
+Gate 3B touches shared CMake. Gate 3B can proceed after that merge without
+waiting for Gate 3A's KVM/phone execution acceptance; Gate 4A still waits for
+the complete Gate 3A gate.
+The sub-checkpoint is a code change, accepted only after its Claude implementation
+and fresh verifier logs name/pass the affected host Debug/Release/header tests,
+both Android ABI/variant cross-compiles, PIC/static/dynamic-closure and 16 KiB
+ELF checks, and existing shared/iOS regressions. The Gate 3A task packet names
+exact commands before dispatch; KVM/phone execution stays at the full exit.
 
 Deliverables:
 
@@ -288,19 +385,26 @@ production registration path.
 
 ### Gate 3B — shared native GGUF inspector (3–5 days)
 
-Gate 3A must land first because both touch root native build configuration. Gate
-3B may overlap the tail of Gate 2, but it must be frozen before the Android
-bridge becomes a new ABI consumer.
+Gate 3A's root-build-configuration sub-checkpoint must land first because both
+touch shared native build files. Serialize those edits, not the entire hardware
+qualification tail. Gate 3B may overlap the tail of Gate 2 and the remaining Gate 3A device
+proof, but must be accepted before either platform adapter consumes the new ABI.
 
 Deliverables:
 
-- a versioned C ABI function returning bounded, typed GGUF facts rather than
+- the accepted append-only C ABI 2.2.0 / `0x00020200` inspector returning
+  bounded GGUF facts-v1 rather than
   accepting a path with unknowable catalog expectations;
 - explicit output struct size/version, buffer ownership, truncation, overflow,
   invalid UTF-8, and maximum-template semantics;
 - catalog-agnostic golden inspection facts that platform adapters will compare
   with their bundled selected entry; and
 - C/C++ header-compile and hostile fixture coverage.
+
+Retain existing ABI 2.1 inference symbols/structures unchanged. Facts-v1 accepts
+GGUF wire version 3 only; reject versions 1/2/4 before metadata interpretation.
+Parser success and the platform's catalog/model/template comparison are separate
+checks, including parser-success empty-template followed by mismatch rejection.
 
 Exit gate:
 
@@ -311,7 +415,12 @@ Exit gate:
 
 ### Gate 4A — Android bridge and deterministic provisioning (3–4 weeks)
 
-This is a GPT-5.6 Sol-owned critical-path milestone.
+Starts after Gates 1/2, complete Gate 3A, and Gate 3B acceptance. Re-estimate the
+packet before dispatch: the displayed range is historical, and this revision
+makes repository scope explicit rather than claiming a fresh duration.
+
+This is a Claude Code-owned critical-path milestone with a fresh independent
+native/concurrency verifier.
 
 Deliverables:
 
@@ -326,12 +435,16 @@ Deliverables:
   `filesDir/PocketLM/Models/<appDirectoryName>` paths;
 - a process-lifetime Kotlin `ModelRepository`/lease authority shared by
   inference, staged installation, selection, deletion, and startup repair;
+- schema-1 compatibility readers and schema-2 writers, migration-fixture/startup
+  repair, native hash/GGUF/catalog validation, durable preference/receipt handling,
+  and committed
+  path admission, implemented without production v2 activation;
 - Kotlin comparison of Gate 3B's bounded facts with the canonical bundled
   catalog, including wrong-model and oversized-field cases;
 - a portable ABI-level bridge fake and CheckJNI instrumented harness;
 - Android app configuration, no-credentials Sentry behavior, and backup rules;
 - minimal deterministic fixture seeding followed by a hardened
-  `seed-android-model.sh`; and
+  `seed-android-model.sh`, using the development route below; and
 - debug APK per-`.so` and `zipalign -c -P 16 -v 4` gates.
 
 Exit gate includes rejection/no-event semantics, token contiguity/coalescing,
@@ -345,9 +458,51 @@ and one session progressing while another teardown blocks. It also requires:
   force-baseline coverage on the same capable device (or a proven baseline-only
   release when no optimized artifact ships);
 - traversal, symlink, arbitrary-JavaScript-path, and uncommitted-install path
-  rejection outside an explicit test-only injection route; and
+  rejection outside an explicit test-only injection route;
+- pending per-model admission promoted without an exclusion gap to a read lease
+  bound to model/publication/opened-file identity, released only after native
+  destruction; failed unload and orphan reload remain fenced;
+- deterministic native migration/repair/receipt conformance against the Gate 0B
+  corpus, including raw-byte authentication and crash/failure prefixes; and
 - fixture-seeded chat, cancel, regenerate, and unload on the named arm64 phone
-  before repository/downloader work starts.
+  before production activation or downloader work starts. Fixture seeding uses
+  an explicitly test-only route; it is not a second production storage writer.
+
+Android has no legacy production installation. It never writes production
+schema 1: pre-activation v2 foundation tests use a compiled test-only catalog;
+Gate 4D performs a fresh production v2 bootstrap. Migration conformance uses
+authentic schema-1 fixture inputs, not an invented Android upgrade history.
+An Android build with bundled production catalog schema 1 fails closed as
+`CATALOG_UNSUPPORTED`. Gate 4A's phone chat uses a dev/test build embedding a
+one-entry v2 catalog with the exact real 0.5B identity and an isolated test root.
+
+Development seeding route (shared design, implemented separately in 4A/4C):
+
+- compile a dev/test-only local-file transport seam beneath the existing
+  `startInstall` command; do not add a public `ManagerMethod` or new persisted
+  schema/receipt shape;
+- host scripts copy validated source bytes into a private import inbox and
+  trigger the unchanged command through test tooling; they never write active,
+  staging-generation, rollback, preference, receipt, or commit files;
+- native code creates the normal receipt and authorizing transfer intent using
+  the selected catalog's frozen URL/size/hash identity, then follows the normal
+  staged hash/GGUF/protection/fsync/publication path under repository authority;
+- the transport seam can only supply bytes; it cannot bypass validation,
+  startup repair, lease conflicts, durable intent, or publication ordering;
+- shipped release builds contain no local-file override or arbitrary-path entry
+  point. This remains a development/recovery/test route, not a public downloader;
+  and
+- test small corpus generations and exact pinned real-model bytes through this
+  route before Gate 4D switching tests. Real network/resume behavior is Gate 5B.
+
+Required 4A/4C packet details before implementation: native-derived import inbox
+outside the fixed production Models layout; permissions/protection/backup
+exclusion and cleanup; disk preflight counting inbox plus complete staged copy;
+compiled transport selector/test trigger; mapping local failures to the closed
+manager error enum; and crash repair for interrupted local delivery/transfer.
+These are packet-level freezes under the existing private test seam, not new
+public manager methods. Overall owner/API readiness cannot be checked off while
+those details are unnamed.
 
 ### Gate 4B — iOS probe and Simulator integration (5–8 days)
 
@@ -376,7 +531,121 @@ Exit gate:
 - policy boundary vectors pass; and
 - the resolved session configuration reaches `loadModel`.
 
+### Gate 4C — iOS native repository foundation
+
+Estimate: redistributed from the former Gate 5B storage/lease allocation;
+packet-level estimate required before dispatch, not a new calendar commitment.
+
+This moves the storage/lease prerequisite out of the downloader milestone; it
+does not add a second storage design. Starts after Gate 2 shared definitions and
+Gate 3B inspector acceptance. Serialize changes to the existing iOS inference
+bridge with other iOS work, including Gate 4B integration.
+
+Deliverables:
+
+- one process-lifetime Objective-C++ repository/lease authority shared by
+  inference, selection, publication, deletion, and startup repair;
+- schema-1 compatibility readers and schema-2 writers, native hash/GGUF/catalog
+  comparison, migration journal, durable preference/receipt handling, and startup repair;
+- native-derived canonical committed paths, pending load admission and opened-
+  file identity-bound leases, join-before-free release, and orphan reconciliation;
+- protection/permissions/backup exclusion for generations and repair metadata;
+- deterministic native fixture, preference-failure, receipt replay, quarantine,
+  and migration/publication crash-prefix tests;
+- the development seeding route specified in Gate 4A, with Simulator host
+  scripts limited to byte delivery instead of direct active-directory writes; and
+- bridge integration behind the Gate 4D activation boundary. Until that checkpoint,
+  preserve the existing schema-1 production baseline and use explicit test-only
+  injection for v2 foundation tests.
+
+Keep the existing `seed-simulator-model.sh` unchanged for authentic schema-1
+setup until activation. Afterwards retain its legacy generation behavior only
+as an offline migration-test input generator in an isolated legacy test sandbox;
+never let it write migrated/production v2 active directories. Real legacy
+migration evidence is Simulator-based because that is the historical install
+lane; physical iPhone qualification uses fresh v2 bootstrap, not fabricated
+device-upgrade history.
+
+The bundled production catalog's `schemaVersion` is the activation boundary;
+there is no separately mutable runtime feature flag. Fixture catalogs and
+transport/ABI fakes are compiled test-only seams, never production enablement.
+
+Exit gate:
+
+- native readers/writers and adapters conform to the accepted corpus; Ruby
+  fixture verification alone does not satisfy this requirement;
+- writers cannot race loading/loaded sessions; failed unload retains ownership;
+- traversal, symlinks, arbitrary JavaScript paths, and uncommitted generation
+  paths reject through the actual iOS bridge outside a compiled test-only route;
+- repair/hash/inspection/path/protection checks fail closed before readiness;
+- Simulator file-protection checks prove configured attributes only; actual
+  locked-device Data Protection behavior remains physical-device Gate 6 proof;
+- durable command identity/replay and exact publication-versus-quarantine delete
+  targeting are proved without an in-app download engine; and
+- existing iOS lifecycle/build suites stay green; no production schema or second
+  model activation occurs in this gate.
+
+Both Gate 4A and Gate 4C require a release-negative check: release compile/link
+inputs and packaged artifacts exclude the local-file transport seam, fixture
+catalogs/test-root override, inference ABI fake and fault-injection hooks.
+Release runtime cannot select those routes. Record exact artifact/configuration
+checks and runtime rejection proof in each platform packet.
+
+### Gate 4D — serialized production activation and switching
+
+Estimate: redistributed from Gate 2's former production activation allocation;
+packet-level estimate required before dispatch.
+
+This is the production portion formerly implied by Gate 2. One owner integrates
+after Gate 2, Gate 3B, Gate 4A, and Gate 4C are accepted. Both native consumers
+must pass before changing the shared production catalog. The new checkpoints
+redistribute existing migration/repository work rather than widen product scope.
+
+Required order:
+
+1. Prove TypeScript, Ruby, Kotlin, and Objective-C++ v2 readers/writers/adapters
+   against their relevant accepted fixtures, with native mutation authority,
+   committed-path leases, startup repair, hash/GGUF checks, and compatible ABI.
+2. Activate catalog v2 with the existing 0.5B model only. iOS performs real,
+   idempotent schema-1 migration under exclusive native authority; Android
+   performs a fresh v2 bootstrap and passes authentic migration-fixture
+   conformance without a production schema-1 writer. On an iOS fresh install,
+   also exercise bootstrap. Keep authentic legacy bytes reproducible on test
+   devices; an already migrated install is not downgraded to fabricate evidence.
+3. Integrate and accept durable preferences, fingerprints, and native switching:
+   internal desired load → preference/fsync → expose active, including failed
+   load, failed preference, failed unload, and React reload/orphan recovery.
+   The pre-1.5B validation vehicle is a compiled test-only two-entry catalog with
+   complete validated small GGUF fixture generations and an ABI-level bridge
+   fake for deterministic load/unload failure scheduling. Repository, filesystem,
+   lease, receipt and preference code are real native implementations, not fake
+   authority. Fixture identities never enter the bundled production catalog.
+4. Only after those checks are green, add the authenticated 1.5B production
+   entry and prove both model IDs/configurations reach the actual native calls.
+   Seed exact authenticated 0.5B/1.5B bytes through the 4A/4C dev route and rerun
+   a named real-core subset on both platforms: 0.5B→1.5B→0.5B, cancel/terminal
+   before unload, durable preference/active identity, injected preference-fsync
+   failure recovery, and React reload/orphan-unload fencing. Report test-fake
+   and real-core evidence separately; no fake alone proves actual model switching.
+   Execution lanes: Android's enrolled arm64 phone and the named iOS Simulator,
+   in isolated dev/test roots. Signed physical iPhone/background-transfer proof
+   remains Gate 6, not implied by this subset.
+   This is feature activation, not final physical performance/release qualification.
+
+Exit gate: real iOS migration preserves the prior 0.5B bytes without redownload;
+Android fresh bootstrap and native migration-fixture conformance pass;
+crash/failure prefixes are recoverable or explicitly fail closed; no false active
+session or double-load is exposed; selected preference is durable before active
+publication; production host/Simulator/Android seeding cannot bypass the native
+repository and must produce a complete validated generation under exclusive
+authority and through the compiled dev/test-only route. Downloaders remain
+unimplemented until this activation gate is accepted.
+
 ### Gate 5A — Android probe and adaptive integration (1–1.5 weeks)
+
+Starts after Gate 4D accepts the production repository and shared switch flow.
+Reuse that accepted switch matrix with actual probe-driven configurations;
+this gate adds adaptive integration rather than re-owning baseline switching.
 
 Deliverables:
 
@@ -401,7 +670,9 @@ Exit gate:
 Estimate: 2–3 calendar weeks with two senior owners; 4–6 engineer-weeks.
 
 Both implementations conform to one shared snapshot/state contract. Progress
-events are hints; snapshots are authoritative.
+events are hints; snapshots are authoritative. Gate 4D must be accepted first;
+Android also requires Gate 5A, and iOS requires Gate 4B. These engines consume the
+accepted native repositories, not create their first mutation authority here.
 
 Android deliverables:
 
@@ -411,7 +682,9 @@ Android deliverables:
   Android 13 notification-denied behavior, and Android 15 timeout/quota paths;
 - exact `Range`/`If-Range` behavior for 206, ignored-range 200, 416, shifted
   ranges, validator changes, and stale/corrupt partials;
-- persisted start/pause/resume/cancel/delete/snapshot states and stable errors;
+- persisted start/pause/resume/cancel/delete/snapshot states, stable errors,
+  exact command receipts/revisions, durable replay, and publication/quarantine
+  delete-target identity from the accepted shared manager contract;
 - closed-file hash and native metadata inspection;
 - repository-fenced publication and deletion; and
 - notification-denied, forced-timeout, Doze, service restart, React reload, and
@@ -430,9 +703,8 @@ iOS deliverables:
 - Objective-C++ adapter rejection coverage for wrong model identity,
   metadata/template mismatch, oversized/truncated facts, and catalog-version
   drift;
-- an iOS process-lifetime model-lease registry shared with the inference bridge:
-  load holds a canonical-path read lease through destroy, while publication,
-  replacement, and deletion require an exclusive lease;
+- integration with Gate 4C's process-lifetime repository and inference leases;
+  download work never replaces or bypasses that accepted authority;
 - an `awaitingPublication` state: background work may stage/hash/verify, but
   final promotion waits for foreground cancel + awaited unload instead of
   racing the inference bridge; and
@@ -460,7 +732,9 @@ sequence in the historical Android or iOS input plans.
    its parents;
 6. prepare/fsync an empty model-specific rollback parent and reject promotion if
    an unresolved rollback already exists;
-7. acquire the platform mutation authority and await unload when required;
+7. request platform mutation authority; if blocked by session IDs, return
+   `MODEL_IN_USE`, complete cancel + awaited unload outside exclusive authority,
+   then retry. Never call or await unload while holding an exclusive lease;
 8. when replacing, atomically rename the entire current active generation to its
    publication-ID rollback path and fsync both parents;
 9. atomically rename the entire complete staged generation to the fixed active
@@ -475,8 +749,11 @@ sequence in the historical Android or iOS input plans.
     retains a valid promoted active generation, and fails closed on ambiguity;
 12. retire rollback only after the new active generation is durably visible and
     revalidated;
-13. during an active-session switch, commit selected preference and active
-    fingerprint only after the new load succeeds. With no live session,
+13. during an active-session switch, keep a successfully loaded desired session
+    internal, durably commit/fsync selected preference, and only then expose its
+    active fingerprint. Preference failure unloads that staged session before
+    recovery; failed staged unload retains the process-global fault blocker.
+    With no live session,
     preference may commit after durability but must not claim the model is
     loaded; and
 14. run startup repair against every staged/active/rollback crash prefix before
@@ -497,7 +774,9 @@ Exit gate:
 - insufficient-space and all documented resume cases fail closed;
 - iOS backup-exclusion `check` passes against an app-downloaded install;
 - protected transient iOS download state is also excluded/cleaned as specified;
-  and
+- both engines preserve durable receipt/replay identity and exact deletion
+  targets across restart, and successful repair/replacement performs the
+  contract's mandatory quarantine cleanup before readiness; and
 - an Android compliance test covers every manifest/runtime foreground-service
   rule in the frozen API matrix.
 
@@ -506,7 +785,8 @@ Exit gate:
 Deliverables:
 
 - models screen for recommendation, override, per-model status, download,
-  pause/resume/cancel, delete, disk use, and warnings;
+  pause/resume/cancel, delete, disk use, and warnings, including `Retry install`
+  and `Delete damaged files` for quarantine-only invalid installations;
 - selected model/config identity in chat, bench, diagnostics, and qualification;
 - versioned fixed qualification profiles per model, with artifacts asserting the
   exact session/generation values passed to native; adaptive-policy results are
@@ -514,6 +794,12 @@ Deliverables:
 - Android qualification collector and platform-specific evidence;
 - a release-candidate aggregator including TSan and real-model suites that the
   current release verifier omits;
+- an explicit development-signing packet before any signed-device operation:
+  user-approved iOS team/provisioning/certificate access and Android development
+  keystore configuration, with credentials kept in local secure stores and only
+  placeholder names/paths in the environment inventory. Missing access blocks
+  that lane; do not create paid accounts, enroll devices, export keys, or publish
+  without separate user authority;
 - synchronized app version, iOS build number, and Android version code; and
 - README, architecture, protocol, toolchain, troubleshooting, validation,
   implementation-log, and independent-verification-log updates.
@@ -531,6 +817,8 @@ Final acceptance:
   isolated native outputs before the signed-device smoke;
 - both 0.5B and 1.5B are independently identified and qualified;
 - all platform and shared contract suites pass from clean worktrees;
+- release artifact/configuration and runtime-negative checks prove absence of
+  local-file transport/test-root/catalog overrides, ABI fakes and fault injection;
 - release artifacts contain only intended ABIs and native dependencies; and
 - validation claims remain bounded to the evidence actually collected.
 
@@ -539,17 +827,29 @@ Final acceptance:
 ```mermaid
 flowchart LR
     G0["G0 contracts"] --> G1["G1 packaging/codegen"]
-    G1 --> G2["G2 shared multi-model/runtime"]
-    G1 --> A1["G3A Android native"]
-    A1 --> V["G3B GGUF inspector"]
+    G1 --> G2["G2 shared definitions/tests; production v1"]
+    G1 --> ACFG["G3A root build-config sub-checkpoint"]
+    ACFG --> A1["G3A Android native execution acceptance"]
+    ACFG --> V["G3B GGUF inspector"]
     G2 --> A2["G4A Android bridge/repository"]
     V --> A2
+    A1 --> A2
     G2 --> I1["G4B iOS probe"]
+    G2 --> IR["G4C iOS repository"]
+    V --> IR
+    G2 --> ACT["G4D serialized v2 migration/switch/1.5B"]
+    A2 --> ACT
+    IR --> ACT
+    V --> ACT
     A2 --> AR["G5A Android probe/adaptive"]
+    ACT --> AR
     V --> AD["G5B Android downloader"]
     AR --> AD
+    ACT --> AD
     V --> ID["G5B iOS downloader"]
     I1 --> ID
+    IR --> ID
+    ACT --> ID
     AD --> Q["G6 qualification"]
     ID --> Q
 ```
@@ -565,52 +865,48 @@ Do not parallelize changes to:
 - merge-conflict resolution in shared files.
 
 After contracts are frozen, Android/iOS probes, platform harnesses, native
-download engines, and platform documentation can proceed in separate worktrees.
+repositories, and platform documentation can proceed in separate worktrees
+after their listed prerequisites. Download engines wait for Gate 4D activation.
+Serialize ABI/consumer wiring and any overlapping iOS bridge files even when
+their surrounding milestones otherwise overlap.
 
-## GPT-5.6 / Codex-Spark orchestration policy
+## Implementation and independent-review workflow
 
-Official OpenAI guidance describes GPT-5.6 Sol as the flagship complex-work
-model and Terra as the balanced tier. Official Codex material describes
-Codex-Spark as a faster, less-capable mode for small, focused coding iterations
-and shows the `gpt-5.3-codex-spark` label in a Codex use case, but a public API
-model page for that exact selector was not established during this review. Treat
-it as the user's requested Codex worker label and verify availability in Gate 0.
-Do not substitute the separately documented `gpt-5.3-codex` API model.
+The inherited `../AGENTS.md` is authoritative. The August GPT-5.6/Spark routing
+was historical orchestration policy and is not an implementation allowlist now.
+Keep its recorded audits/acceptances; do not re-label their original reviewers.
 
-Sources: [OpenAI GPT-5.6 model guidance](https://developers.openai.com/api/docs/guides/latest-model),
-[Codex granular UI use case](https://learn.chatgpt.com/use-cases/make-granular-ui-changes),
-and [GPT-5.3-Codex model page](https://developers.openai.com/api/docs/models/gpt-5.3-codex).
-
-| Role | Allowed model | Work |
+| Role | Assignment | Work |
 | --- | --- | --- |
-| Root orchestrator | `gpt-5.6-sol`, high by default | Contract freeze, task graph, integration order, merge decisions, risk/evidence audit |
-| Critical designer/implementer | `gpt-5.6-sol`, high/xhigh | C ABI, JNI/iOS lifetime, mutation authority, crash recovery, security, final review |
-| Bounded implementation worker | `gpt-5.6-terra`, medium/high | Tooling, TypeScript/Ruby refactors, probes, CI, fixtures, platform work behind frozen interfaces |
-| Fast micro-edit worker | `gpt-5.3-codex-spark` | One small UI/copy/fixture/test edit with an explicit file allowlist and immediate verification |
+| Lead/integrator | Current Codex lead | Task graph, contracts, scope, integration and evidence audit |
+| Code implementer | Claude Code; exact model recorded in the task packet | Scoped implementation; clarified retries up to five total attempts |
+| Independent verifier | Fresh agent, separate from the implementer | Inspect each changed attempt, run proportionate checks, report defects; no feature edits |
+| Planning reviewer for this revision | Claude CLI, exact `claude-opus-5-5` requested by user | Missed requirements, ordering, alternatives, complexity and risk; review only |
 
 Rules:
 
-1. No worker outside the allowlist may be selected, and no unavailable model is
-   silently replaced. If the exact Spark worker is unavailable, use GPT-5.6
-   Terra for the same bounded task or leave it queued.
-2. Spark never owns JNI/Objective-C++ lifetime, ABI evolution, storage
-   migration, hashing/verification, download recovery, licensing, signing,
-   security review, or final approval.
+1. Call Claude Code for code implementation rather than editing code directly.
+   Do not silently replace a user-requested model. If unavailable, record the
+   limitation and request direction before selecting a materially different one.
+2. Planning changes require Claude Code review before execution. Incorporate
+   findings or explicitly record why they are not adopted; model availability
+   and a review result are not permission to bypass hardware or acceptance gates.
 3. Run at most three worker lanes plus the root orchestrator. One worker owns a
    subsystem at a time.
 4. Every task packet states objective, prerequisites, allowed files, forbidden
    contract changes, invariants, required tests, evidence format, and escalation
    conditions.
-5. The implementer cannot be the independent verifier. A GPT-5.6 Sol reviewer
-   signs off every contract/concurrency/storage milestone; Terra may independently
-   verify bounded low-risk work.
-6. Two failed repair attempts, an unexpected shared-interface change, a native
-   lifetime ambiguity, or a migration/recovery discrepancy escalates to Sol.
+5. After each Claude attempt that changes code, dispatch a fresh independent
+   verifier. Read both implementation and verification logs before acceptance.
+6. An unexpected shared-interface change, native lifetime ambiguity, or migration/
+   recovery discrepancy escalates to the lead. Clarify incomplete/failed Claude
+   work and retry up to five total implementation attempts, never broadening scope.
 7. The orchestrator alone integrates shared branches, resolves conflicts, and
    updates the dependency graph. Platform workers rebase only after a shared
    gate is accepted.
-8. Each milestone records an implementation log and an independent verification
-   log before its branch is eligible to merge.
+8. Each milestone records `docs/implementation-logs/<milestone>/YYYY-MM-DD-claude-code-<task>.md`
+   and `YYYY-MM-DD-verifier-<task>.md` before it is eligible to merge. Include
+   inspected/changed files, commands, passes, failures/causes, risks and final status.
 
 Recommended branch/worktree shape:
 
@@ -620,6 +916,8 @@ codex/expansion-foundation
 codex/android-native
 codex/android-bridge
 codex/ios-probe
+codex/ios-repository
+codex/expansion-activation
 codex/shared-verifier
 codex/android-download
 codex/ios-download
@@ -677,6 +975,9 @@ cross-family models and store publication. With the shared foundation landed
 first, then three bounded worker lanes plus the orchestrator, expected elapsed
 time is approximately 10–16 calendar weeks. Hardware access, Expo/codegen
 integration, or background-transfer failures can extend the critical path.
+These are work estimates, not a current calendar commitment. Gate 4C/4D split
+existing Gate 2/5B work; re-estimate task packets after hardware/Linux/capacity
+readiness and the revised dependencies are accepted.
 
 The implementation is not complete when code compiles. It is complete when the
 two clean-install journeys pass, the existing inference lifecycle contract still

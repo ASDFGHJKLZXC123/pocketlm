@@ -1495,18 +1495,39 @@ The serialized shared-foundation chain is:
 2. Gate 1 packaging/codegen foundation: root static/PIC CMake policy, codegen
    ownership move exactly once, minimal Android generation, isolated iOS SDK
    packaging, durable generic XCTest lane, and catalog resource identity.
-3. Dual-read catalog/record code and migration tests while catalog remains v1.
-4. Activate catalog v2 with one model and migrate; add 1.5B only afterward.
-5. Land the preference/fingerprint/switch state machine.
+3. Gate 2 dual-read catalog/record code, shared manager/snapshot/spec and switch
+   definitions, and migration/switch tests against fake authority while
+   production catalog/storage remain v1. These tests are not native acceptance.
+4. Accept the Gate 3B ABI 2.2 inspector and Gate 4A/4C platform-native
+   repositories: exclusive mutation, committed-path admission/read leases,
+   startup repair, hash/GGUF/catalog validation, native readers/writers, and
+   durable preference/receipt handling. Both native consumers must be green
+   before changing the shared production catalog.
+5. Gate 4D activates catalog v2 with one model: real iOS legacy migration under
+   exclusive authority and Android fresh v2 bootstrap (plus native legacy-fixture
+   conformance, never a production schema-1 writer). It then accepts durable
+   preference/fingerprint/switch integration with compiled two-entry test
+   catalogs on real repositories (internal desired load, preference/fsync, then
+   expose active). Only afterward does it add the authenticated 1.5B entry and
+   rerun the named real-core 0.5B↔1.5B switch subset on both platforms.
 
 After Gate 1 is accepted, Android native CPU packaging may proceed in parallel
 with the Gate 2 catalog/runtime chain because it cannot change catalog,
 persistence, switch, or snapshot contracts. The C ABI 2.2 inspector core/host
 tests may overlap only the tail of Gate 2 and must be accepted before either
-platform adapter consumes it. The repository/lease/path validator follows the
-switch-state contract. The model-manager snapshot/spec lands exactly once before
-platform implementations. Production activation of the final model pins and
-policy profile, the application version, and release claims land last.
+platform adapter consumes it. Repository/lease/path implementations follow the
+shared switch-state definitions, but precede production migration/selection
+activation. The model-manager snapshot/spec lands exactly once in Gate 2 before
+platform implementations. Gate 5B download engines consume the already accepted
+repositories and activation flow; they do not introduce the first lease authority.
+Gate 4A/4C development seeding is a compiled test-only transport seam beneath
+the existing `startInstall` flow: host byte delivery only, native normal receipts/
+authorizing transfer/validation/publication, no new public API or persisted shape,
+and no shipped release override. The bundled catalog `schemaVersion` governs
+production activation; test catalogs/seams never enable production behavior.
+Authenticated model pins/policy definitions stay frozen from Gate 0B; final
+release configuration/version/claim validation lands at Gate 6, separate from
+Gate 4D's second-model feature activation.
 
 Codegen/lockfiles, schema activation/migration, ABI/consumers, switch mutation
 state, and shared snapshot enums must never be changed concurrently.
@@ -1520,7 +1541,16 @@ overall Gate 0 exit:
 - assigned Linux/KVM installation evidence for the API-36 Google APIs x86_64
   image revision 7 and API-36 Google APIs 16 KiB x86_64 image revision 7;
   macOS arm64 CMake `3.31.6` and both arm64 image revisions were recorded on
-  2026-08-23.
+  2026-08-23; and
+- final overall closure/owner-readiness review against the authoritative
+  `docs/implementation-logs/GATE_0_ORCHESTRATION.md` checklist.
+
+The 2026-10-03 planning reconciliation moves new prebuild/XCTest/device-SDK
+implementation acceptance to Gate 1, Android emulator/native execution to
+Gates 3A/4A, and final platform qualification to Gate 6. It does not waive those
+proofs or change frozen contract semantics. Recheck worktree/tool/capacity
+readiness separately before dispatch; historical host evidence is not current
+build headroom. Overall Gate 0 remains open.
 
 These items may refine open values but may not weaken the frozen ownership,
 lifetime, publication, path-safety, or versioning rules.

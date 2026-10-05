@@ -227,3 +227,11 @@ and these decisions with no remaining findings, closing G0-B. Overall Gate 0
 remains separately blocked on its hardware, Linux/KVM, and platform-lane
 evidence. The acceptance record is
 [Gate 0B contract-fixture acceptance](../implementation-logs/GATE_0B_CONTRACT_FIXTURES_2026-08-23.md).
+
+Current-status pointer (2026-10-03): the evidence sentence above preserves the
+August acceptance-time view. The owning plan and `GATE_0_ORCHESTRATION.md` now
+assign new prebuild/XCTest/device-SDK acceptance to Gate 1, emulator/native
+execution to Gates 3A/4A, and final platform qualification to Gate 6. Remaining
+overall Gate 0 evidence is hardware enrollment, assigned Linux/KVM installation,
+and final closure review. The frozen decisions/model facts and fixture bytes
+are unchanged; this pointer does not authorize schema/runtime/ABI activation.

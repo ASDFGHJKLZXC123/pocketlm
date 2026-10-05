@@ -1,9 +1,9 @@
 # Expansion Gate 0 baseline
 
-Status: active capture; G0-A tooling and macOS prerequisite evidence accepted;
-G0-A and Gate 0 remain open.
+Status: G0-A tooling/macOS package evidence and G0-B fixtures accepted;
+G0-A Linux/KVM evidence and overall Gate 0 remain open.
 Original evidence date: 2026-08-07.
-Updated: 2026-08-23.
+Updated: 2026-10-03 (status/dependency reconciliation, not a build rerun).
 Repository basis: `6f9de4a33d08a11ec37258b0d2cab1acab5f61a4`.
 Documentation preservation: `3425a50c20f758702316b2c0cb831240ffbdde44`.
 G0-A implementation: `2975d61d13903dd3cb5ee8518034427fe9d345be`.
@@ -15,8 +15,33 @@ add iOS or Android expansion behavior.
 
 Detailed G0-A workspace, commit-chain, toolchain, and acceptance evidence is in
 `docs/implementation-logs/GATE_0A_REPRODUCIBLE_WORKSPACE.md`.
-The current consolidation and platform refresh is in
+The August consolidation and platform refresh is in
 `docs/implementation-logs/GATE_0_CONSOLIDATION_2026-08-23.md`.
+Gate 0B acceptance is in
+`docs/implementation-logs/GATE_0B_CONTRACT_FIXTURES_2026-08-23.md`.
+
+## Current checkpoint — 2026-10-03
+
+- Active branch: `codex/gate-0b-contract-fixtures`, HEAD
+  `8e6c4adef7a0c7fc6015b2b28460fbf7875d671e`; clean before this documentation revision.
+- Local `main`: `561c66d6e0cc2f8dc8ce384f5341a0ea39ae6bac`; cached `origin/main`:
+  `6f9de4a33d08a11ec37258b0d2cab1acab5f61a4`. No fetch/push was performed.
+- The original path still contains spaces; the historical G0-A and M4R
+  worktrees remain absent/prunable. No metadata or user files were removed.
+- Disk observation: 12,770,476 KiB (12.18 GiB). This is above the iOS release
+  verifier's default 8 GiB threshold but below the Android 40 GiB safety floor /
+  50 GiB preference. Recheck immediately before each lane; the August 53.04 GiB
+  PASS is historical and cannot satisfy current dispatch readiness.
+- Gate 0B's 173 cases / 10 families / 30 indexed files and the authenticated
+  1.5B GGUF/template/license facts are accepted; production stays schema 1 / one
+  model / ABI 2.1.0. Future native-language conformance is not yet proved.
+- This revision runs documentation/fixture checks only; no application/native
+  build, dependency installation, emulator or physical-device qualification is
+  claimed. The orchestration checklist owns current overall Gate 0 blockers.
+
+The following repository/tool/build tables preserve the August evidence context,
+except where an explicit current-status pointer is given. They are not a fresh
+October host inventory or build acceptance.
 
 ## Repository state
 
@@ -90,7 +115,7 @@ result with whole-verifier evidence.
 | 1.5B source identity | Official Qwen repository, revision `91cad51170dc346986eccefdc2dd33a9da36ead9` |
 | 1.5B remote object | 1,117,320,736 bytes; SHA-256 `6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e` |
 | 1.5B license | Apache License 2.0 bytes at the pinned revision: 11,343 bytes; SHA-256 `832dd9e00a68dd83b3c3fb9f5588dad7dcf337a0db50f7d9483f310cd292e92e` |
-| 1.5B admission | Blocked until exact GGUF facts and template evidence are independently verified |
+| 1.5B authentication / admission | GGUF/template/license evidence accepted by Gate 0B (decision G0B-004); production admission remains deferred to Gate 4D, not blocked on authentication |
 
 Large models remain outside Git and ordinary CI artifacts.
 
@@ -145,17 +170,23 @@ evidence.
 
 ## Blocking conditions
 
-1. Completed in G0-A: preserve the nine Gate 0 documents and create a clean,
-   no-space implementation worktree without changing the original checkout.
-2. Completed on this host: current free space exceeds the 40 GiB safety floor,
-   and the exact macOS arm64 Android packages and AVD definitions are recorded.
-3. Use the deterministic explicit command-line tools 22 entry point; record the
-   assigned Linux/KVM x86_64 packages and deterministic Android prebuild/runtime
-   lanes.
-4. Connect or supply facts for one Android arm64 phone and one iOS 17+ iPhone.
-5. Complete the clean iOS XCTest/device-SDK lanes and Android platform lanes.
-   Native all, TSan, exact model-backed, and clean iOS Simulator release evidence
-   are complete.
-6. Accept and fixture the Gate 0 contracts.
+Current Gate 0 evidence (authoritative checklist: `GATE_0_ORCHESTRATION.md`):
 
-These are Gate 0 constraints, not failures introduced by expansion code.
+1. Record the assigned Linux/KVM normal and 16 KiB API-36 x86_64 image-revision-7
+   installation evidence using the deterministic package-resolution route.
+2. Connect or supply reproducible facts for one Android arm64 phone and one
+   iOS 17+ iPhone, without recording private serial/device identifiers.
+3. Accept the final overall Gate 0 closure/owner-readiness review. Gate 0B's
+   contract/fixture freeze is already complete.
+
+Separate implementation/dispatch requirements:
+
+- recreate a clean no-space worktree and recheck capacity/pinned tools before
+  dispatch; current Android headroom is below the floor;
+- Gate 1 creates/proves deterministic prebuilds, durable XCTest, and isolated
+  Simulator/device-SDK packaging; Gates 3A/4A prove Android emulator/native lanes;
+- Gates 4A/4C own native repository/leases/repair, Gate 4D owns production
+  migration/switch/second-model activation, and Gate 6 owns final qualification.
+
+These existing gaps are not failures introduced by expansion code, nor grounds
+to require Gate 1 outputs before permitting Gate 1 to create them.

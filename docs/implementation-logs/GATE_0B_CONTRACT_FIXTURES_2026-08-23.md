@@ -65,3 +65,11 @@ Gate 0B closure does not close the overall gate. The remaining blockers are the
 attached Android/iOS hardware facts, assigned Linux/KVM normal and 16 KiB
 API-36 image evidence, and the outstanding platform-lane qualification recorded
 by the orchestration and contract checklists.
+
+Current-status pointer (2026-10-03): the paragraph above preserves the acceptance-
+time view. The revised owning plan and `GATE_0_ORCHESTRATION.md` now assign new
+prebuild/XCTest/device-SDK evidence to Gate 1, emulator/native execution to
+Gates 3A/4A, and final qualification to Gate 6. Remaining overall Gate 0 evidence
+is hardware enrollment, assigned Linux/KVM installation, and final closure
+review. This pointer does not reopen Gate 0B, weaken its contracts, or authorize
+production activation.
